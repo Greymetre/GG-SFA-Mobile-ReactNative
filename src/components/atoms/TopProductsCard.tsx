@@ -316,7 +316,8 @@ const TopProductsCard = ({ data }: { data: any }) => {
 
     return currentRawProducts.slice(0, 5).map((item: any, index: number) => ({
       rank: index + 1,
-      name: item.product_name || 'N/A',
+      name: String(item.product_name || '').trim() || 'N/A',
+      ggNo: String(item.gg_no || '').trim(),
       quantity: item.quantity || 0,
       value: item.value || 0,
       progressQty: totalQuantity > 0 ? `${((item.quantity || 0) / totalQuantity) * 100}%` : '0%',
@@ -364,6 +365,11 @@ const TopProductsCard = ({ data }: { data: any }) => {
         </View>
 
         {/* Products List */}
+        {productsToDisplay.length === 0 && (
+          <AppText size={13} color="#6b7280" align="center" style={{ marginTop: 18 }}>
+            No SKU orders for {activeTab} yet
+          </AppText>
+        )}
         {productsToDisplay.map((item: any) => (
           <View key={item.rank} style={styles.productRow}>
             <View style={styles.rankContainer}>
@@ -380,6 +386,11 @@ const TopProductsCard = ({ data }: { data: any }) => {
                   <AppText numLines={1} size={16} family="InterMedium" color="#000">
                     {item.name}
                   </AppText>
+                  {!!item.ggNo && (
+                    <AppText numLines={1} size={12} family="InterMedium" color="#8a8fa3">
+                      GG No: {item.ggNo}
+                    </AppText>
+                  )}
                 </View>
 
                 {/* Primary Value */}

@@ -3,29 +3,11 @@ import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import AppText from '../AppText/AppText';
 import { rw } from '../../utils/responsive';
 
-type ZoneItem = { zone?: string; name?: string; target?: number; achievement?: number; percentage?: number; percent?: number; pct?: number; achievement_percentage?: number };
+type ZoneItem = { zone?: string; name?: string; parent_zone?: string; target?: number; achievement?: number; percentage?: number; percent?: number; pct?: number; achievement_percentage?: number };
 type StateItem = { state?: string; name?: string; sales_value?: number; sales_value_lacs?: number; percentage?: number };
 type HighlightItem = { label?: string; title?: string; description?: string; desc?: string; icon?: string; iconBg?: string };
 type AlertItem = { title?: string; description?: string; desc?: string; severity?: 'high' | 'medium' | 'low'; icon?: string; zone?: string; type?: string; destination?: 'attendance' | 'target' | 'user_activity' | 'inactive_customers' };
 type InactiveCustomer = { id?: number | string; name?: string; mobile?: string };
-
-const STATIC_HIGHLIGHTS: HighlightItem[] = [
-  { label: 'Gradation Of The Month', title: 'Ramesh Kumar — Rating 95%', desc: 'Top performer across all zones · MTD', iconBg: '#3fb6e0', icon: '📌' },
-  { label: 'Top Customer', title: 'Shree Balaji Traders', desc: 'Highest order value MTD — ₹4.8 L', iconBg: '#2B2B2B', icon: '🏬' },
-  { label: 'Special Offer', title: 'Monsoon Dealer Bonanza', desc: 'Extra 2% incentive on HDPE Pipe orders this month', iconBg: '#eb9b1e', icon: '➤' },
-  { label: 'Milestone', title: '10+ customers onboarded', desc: 'Crossed a new customer milestone this quarter', iconBg: '#1fb87a', icon: '★' },
-  { label: 'New Launch', title: 'uPVC UDS pipe — now in West zone', desc: 'Available for order starting this week', iconBg: '#2f8fe0', icon: '🖥️' },
-  { label: 'Product Of The Month', title: 'F4.0"(110mm) Sprinkler Irrigation System', desc: '220 units sold MTD — highest selling SKU', iconBg: '#d6634a', icon: '📊' },
-  { label: 'Fastest Growing Zone', title: 'West zone — up 24% MTD', desc: 'Best zone-on-zone growth this month', iconBg: '#0e9f8f', icon: '📈' },
-];
-
-const STATIC_ALERTS: AlertItem[] = [
-  { title: 'High Mis Punch — West Zone', desc: '5 mis-punches recorded today, most from West zone. Needs immediate review.', severity: 'high', icon: '⚠️' },
-  { title: 'South Zone Lagging On Target', desc: 'Only 34% of MTD target achieved with 14 days left in the month.', severity: 'high', icon: '⚠️' },
-  { title: 'Inactive Customers Rising', desc: '8 customers have placed no order in the last 30 days — churn risk.', severity: 'medium', icon: '🔴' },
-  { title: 'High Outstanding Dues', desc: '₹12.40 L outstanding from 9 customers, overdue by 30+ days.', severity: 'high', icon: '₹' },
-  { title: 'Low Visit Compliance', desc: 'Only 62% of planned customer visits completed this week across zones.', severity: 'medium', icon: '📍' },
-];
 
 export const ZonePerformanceCard = ({ data }: { data: any }) => {
   const zones: ZoneItem[] = data?.zone_performance_mtd || data?.zone_performance || [];
@@ -41,7 +23,7 @@ export const ZonePerformanceCard = ({ data }: { data: any }) => {
   if (!sorted.length) {
     return (
       <View style={styles.card}>
-        <AppText size={13} color="#6b7280" align="center">No zone performance data available</AppText>
+        <AppText size={13} color="#6b7280" align="center">No sub zone performance data for this month yet</AppText>
       </View>
     );
   }
@@ -56,9 +38,9 @@ export const ZonePerformanceCard = ({ data }: { data: any }) => {
           <View style={styles.topZone}>
             <View style={styles.icon}><AppText size={18}>🏆</AppText></View>
             <View style={{ flex: 1 }}>
-              <AppText size={11} color="#6b7280" family="InterMedium">Top Performing Zone</AppText>
+              <AppText size={11} color="#6b7280" family="InterMedium">Top Performing Sub Zone</AppText>
               <AppText size={14} color="#1f2437" family="InterSemiBold">
-                {sorted[0]?.zone || sorted[0]?.name} Zone — {Math.round(topPercentage)}% MTD Achievement
+                {sorted[0]?.name || sorted[0]?.zone} — {Math.round(topPercentage)}% MTD Achievement
               </AppText>
             </View>
           </View>
@@ -68,11 +50,21 @@ export const ZonePerformanceCard = ({ data }: { data: any }) => {
             return (
               <View key={`${item.zone || item.name}-${index}`} style={styles.zoneRow}>
                 <View style={styles.rowBetween}>
-                  <View style={styles.row}>
+                  <View style={[styles.row, { flex: 1 }]}>
                     <View style={[styles.rank, index === 0 && styles.rankTop]}><AppText size={11} color="white" family="InterSemiBold">{index + 1}</AppText></View>
-                    <AppText size={13} color="#1f2437" family="InterSemiBold">{item.zone || item.name}</AppText>
+                    <View style={{ flex: 1 }}>
+                      <AppText size={13} color="#1f2437" family="InterSemiBold" numLines={1}>{item.name || item.zone}</AppText>
+                      {!!item.parent_zone && item.parent_zone !== (item.name || item.zone) && (
+                        <AppText size={10} color="#8a8fa3" numLines={1}>{item.parent_zone} Zone</AppText>
+                      )}
+                    </View>
                   </View>
-                  <AppText size={13} color={index === 0 ? '#1f8a4c' : '#2B2B2B'} family="InterSemiBold">{Math.round(percentage)}%</AppText>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <AppText size={13} color={index === 0 ? '#1f8a4c' : '#2B2B2B'} family="InterSemiBold">{Math.round(percentage)}%</AppText>
+                    <AppText size={10} color="#8a8fa3">
+                      ₹{(Number(item.achievement || 0) / 100000).toFixed(2)}L / ₹{(Number(item.target || 0) / 100000).toFixed(2)}L
+                    </AppText>
+                  </View>
                 </View>
                 <View style={styles.track}><View style={[styles.fill, { width: `${barWidth}%`, backgroundColor: index === 0 ? '#1f8a4c' : '#8b93ff' }]} /></View>
               </View>
@@ -141,7 +133,17 @@ export const StatePerformanceCard = ({ data }: { data: any }) => {
 };
 
 export const DashboardHighlights = ({ data }: { data: any }) => {
-  const highlights: HighlightItem[] = data?.highlights?.length ? data.highlights : data?.dashboard_highlights?.length ? data.dashboard_highlights : STATIC_HIGHLIGHTS;
+  // live highlights from the dashboard API (api/attendance/today-summary); ones without data are not sent
+  const highlights: HighlightItem[] = Array.isArray(data?.highlights) ? data.highlights : [];
+  if (!highlights.length) {
+    return (
+      <View style={styles.card}>
+        <AppText size={13} color="#6b7280" align="center">
+          {data ? 'No highlights for this month yet' : 'Loading highlights…'}
+        </AppText>
+      </View>
+    );
+  }
   return (
     <View>
       {highlights.map((item, index) => (
@@ -159,29 +161,7 @@ export const DashboardHighlights = ({ data }: { data: any }) => {
 };
 
 export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPress?: (alert: AlertItem) => void }) => {
-  const [showInactiveCustomers, setShowInactiveCustomers] = useState(false);
-  const [inactiveCustomerTab, setInactiveCustomerTab] = useState<'primary' | 'secondary'>('primary');
-  const highest = data?.mispunch_alert;
-  const count = Number(highest?.count || 0);
-  const zone = String(highest?.zone || '').replace(/\s+zone$/i, '').trim();
-  const misPunchAlert: AlertItem = zone && count > 0
-    ? {
-        title: `High Mis Punch — ${zone} Zone`,
-        desc: `${count} mis-punch${count === 1 ? '' : 'es'} recorded MTD, the highest among all zones. Needs immediate review.`,
-        severity: 'high',
-        icon: '⚠️',
-        zone,
-        type: highest?.status || 'not_punch_in',
-        destination: 'attendance',
-      }
-    : {
-        title: data ? 'No Mis Punches Recorded' : 'High Mis Punch',
-        desc: data
-          ? 'No missed punches have been recorded MTD across zones.'
-          : 'Checking the latest attendance data by zone…',
-        severity: data ? 'low' : 'high',
-        icon: data ? '✓' : '⚠️',
-      };
+  const [showInactiveRetailers, setShowInactiveRetailers] = useState(false);
 
   const targetZones: ZoneItem[] = data?.zone_performance_mtd || data?.zone_performance || [];
   const laggingZone = targetZones
@@ -199,8 +179,8 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
   );
   const laggingTargetAlert: AlertItem = laggingZoneName
     ? {
-        title: `${laggingZoneName} Zone Lagging On Target`,
-        desc: `Only ${Math.round(laggingPercentage)}% of the MTD target has been achieved — the lowest among all zones.`,
+        title: `${laggingZoneName} Lagging On Target`,
+        desc: `Only ${Math.round(laggingPercentage)}% of the MTD target has been achieved — the lowest among all sub zones.`,
         severity: 'high',
         icon: '⚠️',
         zone: laggingZoneName,
@@ -208,65 +188,25 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
       }
     : {
         title: 'Target Performance Unavailable',
-        desc: 'No eligible MTD zone target data is available.',
+        desc: 'No sub zone has a sales target this month.',
         severity: 'medium',
         icon: '!',
       };
 
-  const inactiveCustomerData = data?.inactive_customers_30_days;
-  const primaryInactiveCustomers: InactiveCustomer[] = Array.isArray(inactiveCustomerData?.primary?.customers)
-    ? inactiveCustomerData.primary.customers
-    : Array.isArray(inactiveCustomerData?.customers)
-      ? inactiveCustomerData.customers
-      : [];
-  const secondaryInactiveCustomers: InactiveCustomer[] = Array.isArray(inactiveCustomerData?.secondary?.customers)
-    ? inactiveCustomerData.secondary.customers
-    : [];
-  const primaryInactiveCount = Number(inactiveCustomerData?.primary?.count ?? primaryInactiveCustomers.length);
-  const secondaryInactiveCount = Number(inactiveCustomerData?.secondary?.count ?? secondaryInactiveCustomers.length);
-  const inactiveCustomerCount = Number(inactiveCustomerData?.count ?? primaryInactiveCount + secondaryInactiveCount);
-  const visibleInactiveCustomers = inactiveCustomerTab === 'primary'
-    ? primaryInactiveCustomers
-    : secondaryInactiveCustomers;
-  const visibleInactiveCount = inactiveCustomerTab === 'primary'
-    ? primaryInactiveCount
-    : secondaryInactiveCount;
-  const inactiveCustomerAlert: AlertItem = {
-    title: 'Inactive Customers Rising',
-    desc: `${inactiveCustomerCount} customer${inactiveCustomerCount === 1 ? '' : 's'} did not place any order in the last 30 days${inactiveCustomerCount > 0 ? ' — tap to view.' : '.'}`,
-    severity: inactiveCustomerCount > 0 ? 'medium' : 'low',
-    icon: inactiveCustomerCount > 0 ? '🔴' : '✓',
+  // retailers of the team with no order in the last 30 days (api/attendance/today-summary)
+  const inactiveRetailerData = data?.inactive_retailers_30_days;
+  const inactiveRetailers: InactiveCustomer[] = Array.isArray(inactiveRetailerData?.customers) ? inactiveRetailerData.customers : [];
+  const inactiveRetailerCount = Number(inactiveRetailerData?.count ?? inactiveRetailers.length);
+  const inactiveRetailerAlert: AlertItem = {
+    title: inactiveRetailerCount > 0 ? 'Inactive Retailers' : 'No Inactive Retailers',
+    desc: `${inactiveRetailerCount} retailer${inactiveRetailerCount === 1 ? '' : 's'} did not place any order in the last 30 days${inactiveRetailerCount > 0 ? ' — tap to view.' : '.'}`,
+    severity: inactiveRetailerCount > 0 ? 'medium' : 'low',
+    icon: inactiveRetailerCount > 0 ? '🔴' : '✓',
     destination: 'inactive_customers',
   };
 
-  const visitCompliance = data?.lowest_visit_compliance_mtd;
-  const visitZone = String(visitCompliance?.zone || '').replace(/\s+zone$/i, '').trim();
-  const plannedVisits = Number(visitCompliance?.planned_visits || 0);
-  const completedVisits = Number(visitCompliance?.completed_visits || 0);
-  const visitPercentage = Number(visitCompliance?.percentage || 0);
-  const lowVisitComplianceAlert: AlertItem = visitZone && plannedVisits > 0
-    ? {
-        title: `Low Visit Compliance — ${visitZone} Zone`,
-        desc: `${Math.round(visitPercentage)}% MTD compliance — ${completedVisits} of ${plannedVisits} planned customer visits completed, the lowest among all zones.`,
-        severity: 'medium',
-        icon: '📍',
-        zone: visitZone,
-        destination: 'user_activity',
-      }
-    : {
-        title: 'Visit Compliance Unavailable',
-        desc: 'No eligible MTD planned-visit data is available.',
-        severity: 'low',
-        icon: '📍',
-      };
+  const alerts: AlertItem[] = [laggingTargetAlert, inactiveRetailerAlert];
 
-  const alerts: AlertItem[] = [
-    misPunchAlert,
-    laggingTargetAlert,
-    inactiveCustomerAlert,
-    STATIC_ALERTS[3],
-    lowVisitComplianceAlert,
-  ];
   return (
     <View>
       {alerts.map((item, index) => {
@@ -282,8 +222,7 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
             style={[styles.alertCard, { borderLeftColor: color }]}
             onPress={isActionable ? () => {
               if (showsCustomerSheet) {
-                setInactiveCustomerTab('primary');
-                setShowInactiveCustomers(true);
+                setShowInactiveRetailers(true);
                 return;
               }
               onAlertPress?.(item);
@@ -302,53 +241,40 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
       })}
 
       <Modal
-        visible={showInactiveCustomers}
+        visible={showInactiveRetailers}
         transparent
         animationType="slide"
         statusBarTranslucent
-        onRequestClose={() => setShowInactiveCustomers(false)}
+        onRequestClose={() => setShowInactiveRetailers(false)}
       >
         <View style={styles.sheetOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowInactiveCustomers(false)} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowInactiveRetailers(false)} />
           <View style={styles.sheetContainer}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
               <View style={{ flex: 1 }}>
-                <AppText size={18} color="#1f2437" family="InterBold">Inactive Customers</AppText>
+                <AppText size={18} color="#1f2437" family="InterBold">Inactive Retailers</AppText>
                 <AppText size={12} color="#6b7280">No orders placed in the last 30 days</AppText>
               </View>
-              <Pressable style={styles.sheetClose} onPress={() => setShowInactiveCustomers(false)}>
+              <Pressable style={styles.sheetClose} onPress={() => setShowInactiveRetailers(false)}>
                 <AppText size={18} color="#4b5563">✕</AppText>
               </Pressable>
             </View>
 
-            <View style={styles.customerTabs}>
-              {(['primary', 'secondary'] as const).map(tab => {
-                const selected = inactiveCustomerTab === tab;
-                const tabCount = tab === 'primary' ? primaryInactiveCount : secondaryInactiveCount;
-                return (
-                  <Pressable
-                    key={tab}
-                    style={[styles.customerTab, selected && styles.customerTabActive]}
-                    onPress={() => setInactiveCustomerTab(tab)}
-                  >
-                    <AppText size={13} color={selected ? '#fff' : '#2B2B2B'} family="InterSemiBold">
-                      {tab === 'primary' ? 'Primary' : 'Secondary'} ({tabCount})
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-
             <View style={styles.sheetCount}>
               <AppText size={12} color="#b5473e" family="InterSemiBold">
-                {visibleInactiveCount} CUSTOMER{visibleInactiveCount === 1 ? '' : 'S'}
+                {inactiveRetailerCount} RETAILER{inactiveRetailerCount === 1 ? '' : 'S'}
               </AppText>
             </View>
+            {inactiveRetailerCount > inactiveRetailers.length && (
+              <AppText size={11} color="#6b7280" style={{ marginTop: 6 }}>
+                Showing the first {inactiveRetailers.length} (A–Z)
+              </AppText>
+            )}
 
             <FlatList
               style={styles.customerScroll}
-              data={visibleInactiveCustomers}
+              data={inactiveRetailers}
               keyExtractor={(customer, index) => `${customer.id || customer.name}-${index}`}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.customerList}
@@ -361,7 +287,7 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
                   </View>
                   <View style={{ flex: 1 }}>
                     <AppText size={14} color="#1f2437" family="InterMedium">
-                      {customer.name || 'Unnamed customer'}
+                      {customer.name || 'Unnamed retailer'}
                     </AppText>
                     <AppText size={12} color="#6b7280">
                       {customer.mobile || 'Mobile number unavailable'}
@@ -370,7 +296,7 @@ export const DashboardAlerts = ({ data, onAlertPress }: { data: any; onAlertPres
                 </View>
               )}
               ListEmptyComponent={(
-                <AppText size={13} color="#6b7280" align="center">No inactive customers found.</AppText>
+                <AppText size={13} color="#6b7280" align="center">No inactive retailers found.</AppText>
               )}
             />
           </View>
@@ -400,9 +326,6 @@ const styles = StyleSheet.create({
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   sheetClose: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f1f2f6', alignItems: 'center', justifyContent: 'center' },
   sheetCount: { alignSelf: 'flex-start', backgroundColor: '#fbe7e6', borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginTop: 14 },
-  customerTabs: { flexDirection: 'row', backgroundColor: '#eef0f8', borderRadius: 12, padding: 4, marginTop: 16 },
-  customerTab: { flex: 1, borderRadius: 9, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
-  customerTabActive: { backgroundColor: '#2B2B2B' },
   customerScroll: { flex: 1, marginTop: 4 },
   customerList: { paddingTop: 10, paddingBottom: 12 },
   customerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eceef4' },

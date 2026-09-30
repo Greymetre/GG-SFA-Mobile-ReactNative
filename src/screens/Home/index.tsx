@@ -30,7 +30,6 @@ import { SCREEN_HEIGHT } from '../../utils/misc'
 import AttendanceCard from '../../components/atoms/AttendanceCard'
 import { attendanceData } from '../../utils/CommanFunction'
 import TargetAchievementCard from '../../components/atoms/TargetAchievementCard'
-import FieldActivitiesCard from '../../components/atoms/FieldActivitiesCard'
 import RetailersOverviewCard from '../../components/atoms/RetailersOverviewCard'
 import TopProductsCard from '../../components/atoms/TopProductsCard'
 import { DashboardAlerts, DashboardHighlights, StatePerformanceCard, ZonePerformanceCard } from '../../components/atoms/DashboardInsights'
@@ -39,7 +38,6 @@ import { startLiveLocationTracking, stopLiveLocationTracking } from '../../servi
 import { APP_VERSION, compareVersions } from '../../utils/appVersion'
 import NotificationBell from '../../components/NotificationBell'
 import PrimaryShineChip from '../../components/atoms/PrimaryShineChip'
-import DealerDistributorPerformanceCard from '../../components/atoms/DealerDistributorPerformanceCard'
 import { BASE_URL } from '../../api/AxiosClient'
 
 interface DropdownItem {
@@ -800,8 +798,7 @@ const Home = () => {
                           openCustomerTypeSheet('view');
                         }
                       } else if (item?.id == 7) {
-                        // Gajra Gro+ destination not decided yet
-                        Toast.show({ type: 'info', text1: 'Gajra Gro+', text2: 'Coming soon', visibilityTime: 2500 });
+                        navigation.navigate('GajraGro');
                       } else {
                         navigation.navigate(item?.navigateTo)
                       }
@@ -860,7 +857,7 @@ const Home = () => {
               />
               <View style={styles.mainContainer}>
                 <View style={[styles.row, { gap: 6 }]}>
-                  <AppText color={colors.black} size={18} family="InterSemiBold" style={{ flex: 1 }}>Zone and State Performance</AppText>
+                  <AppText color={colors.black} size={18} family="InterSemiBold" style={{ flex: 1 }}>Sub Zone and State Performance</AppText>
                   <PrimaryShineChip />
                   <View style={styles.todayContainer}>
                     <AppText color={colors.blue} family="InterMedium" size={11}>MTD</AppText>
@@ -880,7 +877,7 @@ const Home = () => {
                           family="InterSemiBold"
                           size={13}
                         >
-                          {tab === 'zone' ? 'Zone' : 'State'}
+                          {tab === 'zone' ? 'Sub Zone' : 'State'}
                         </AppText>
                       </Pressable>
                     );
@@ -899,37 +896,9 @@ const Home = () => {
               </View>
               <RetailersOverviewCard data={homeData} />
               <View style={styles.mainContainer}>
-                <View style={[styles.row, { justifyContent: 'space-between' }]}>
-                  <AppText color={colors.black} size={18} family="InterSemiBold">
-                    Dealer/Distributor Performance
-                  </AppText>
-                  <Pressable
-                    onPress={() => navigation.navigate('DealerDistributorPerformanceViewAllScreen')}
-                    hitSlop={10}
-                  >
-                    <AppText color={colors.blue} family="InterMedium" size={13}>View All →</AppText>
-                  </Pressable>
-                </View>
-              </View>
-              <DealerDistributorPerformanceCard data={homeData} />
-              <View style={styles.mainContainer}>
                 <AppText color={colors.black} size={18} family="InterSemiBold">Top Performing SKUs</AppText>
               </View>
               {homeData && <TopProductsCard data={homeData} />}
-              <View style={styles.mainContainer}>
-                <View style={[styles.row, { justifyContent: 'space-between' }]}>
-                  <View style={[styles.row, { gap: 10 }]}>
-                    <AppText color={colors.black} size={18} family="InterSemiBold">Promotional Activities</AppText>
-                  </View>
-                  <Pressable
-                    onPress={() => navigation.navigate('PromotionalActivitiesViewAllScreen')}
-                    hitSlop={10}
-                  >
-                    <AppText color={colors.blue} family={'InterMedium'} size={13}>View All →</AppText>
-                  </Pressable>
-                </View>
-              </View>
-              <FieldActivitiesCard data={homeData} />
               <View style={styles.mainContainer}>
                 <AppText color={colors.black} size={18} family="InterSemiBold">Highlights</AppText>
               </View>

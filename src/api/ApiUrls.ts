@@ -73,5 +73,8 @@ export const API_ENDPOINT = {
   EXPENSE_DETAILS: "api/expenseDetails",
   APPROVE_EXPENSE: "api/approveExpense",
   REJECT_EXPENSE: "api/rejectExpense",
+  ASM_RATING: "api/asm-rating",
+  ASM_RATING_DETAIL: "api/asm-rating/",
+  GAJRA_GRO: "api/gajra-gro",
 
 };

@@ -43,7 +43,7 @@ export const dashboardTiles = [
     title: "Gajra\nGro+",
     image: require("../../assets/images/GroPlusLogo.png"),
     bgColor: colors.blue,
-    navigateTo: "",
+    navigateTo: "GajraGro",
   },
 ];
 export const DATA = [

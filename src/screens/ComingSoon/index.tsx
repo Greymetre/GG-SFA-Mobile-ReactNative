@@ -7,7 +7,7 @@ import SpinningGear from '../../components/atoms/SpinningGear';
 import { brandGradient, colors } from '../../utils/Colors';
 import { SCREEN_WIDTH } from '../../utils/misc';
 
-// Placeholder for bottom-bar tabs whose content is not built yet (PAC, Rating)
+// Placeholder for bottom-bar tabs whose content is not built yet (PAC)
 const ComingSoon = ({ title, subtitle }: { title: string; subtitle?: string }) => (
   <View style={styles.screen}>
     <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -33,7 +33,6 @@ const ComingSoon = ({ title, subtitle }: { title: string; subtitle?: string }) =
 );
 
 export const PacScreen = () => <ComingSoon title="PAC" />;
-export const RatingScreen = () => <ComingSoon title="Rating" />;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgColor },

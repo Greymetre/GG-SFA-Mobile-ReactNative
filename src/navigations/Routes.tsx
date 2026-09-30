@@ -10,6 +10,7 @@ import BottomTab from './BottomTab';
 import CustomerList from '../screens/CustomerList';
 import AddCustomer from '../screens/AddCustomer';
 import ExpenseReport from '../screens/ExpenseReport';
+import GajraGro from '../screens/GajraGro';
 import ExpenseDetails from '../screens/ExpenseReport/ExpenseDetails';
 import AttendanceReport from '../screens/AttendanceReport';
 import UserActivityScreen from '../screens/UserActivity';
@@ -82,6 +83,10 @@ const Routes = () => {
         <Stack.Screen name='AttendanceReport' component={AttendanceReport} options={{
           headerShown: true,
           title: 'Attendance Report'
+        }} />
+        <Stack.Screen name='GajraGro' component={GajraGro} options={{
+          headerShown: true,
+          title: 'Gajra Gro+'
         }} />
         <Stack.Screen name='ExpenseReport' component={ExpenseReport} options={{
           headerShown: true,

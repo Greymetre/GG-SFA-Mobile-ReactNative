@@ -33,6 +33,7 @@ export type RootStackParamList = {
   } | undefined;
   AttendanceReport:undefined;
   ExpenseReport:undefined;
+  GajraGro:undefined;
   ExpenseDetails:{
     expense?: any;
     expense_id?: string | number;

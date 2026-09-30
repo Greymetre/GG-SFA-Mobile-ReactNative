@@ -50,7 +50,7 @@ const RetailersOverviewCard = ({data}: any) => {
                 </View>
                 {/* Header Text */}
                 <AppText size={14} color="#8a8fa3" family='InterRegular'>
-                    Total Customers
+                    Customers Registered · {period}
                 </AppText>
 
                 {/* Main Number */}

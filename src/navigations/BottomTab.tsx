@@ -4,7 +4,8 @@ import CustomHeader from '../components/Header';
 import GearTabBar from './GearTabBar';
 import Home from '../screens/Home';
 import OrderList from '../screens/OrderScreen';
-import { PacScreen, RatingScreen } from '../screens/ComingSoon';
+import { PacScreen } from '../screens/ComingSoon';
+import RatingScreen from '../screens/Rating';
 const Tab = createBottomTabNavigator();
 
 const BottomTab = () => {
