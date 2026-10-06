@@ -24,7 +24,7 @@ import { AddToCartIcon, ArrowCardDownIcon, CheckIcon, CrossIconCard, EmailIcon, 
 import AppText from '../AppText/AppText';
 import { rw } from '../../utils/responsive';
 import { SCREEN_WIDTH } from '../../utils/misc';
-import { resolveMediaUrl } from '../../api/AxiosClient';
+import MediaImage from './MediaImage';
 import FastImage from 'react-native-fast-image';
 import Toast from 'react-native-toast-message';
 import { useGetSubmitCheckIN } from '../../api/query/CustomerApi';
@@ -106,9 +106,8 @@ const CustomerCard: React.FC<SolarCardProps> = ({
     item?.customeraddress?.full_address ||
     type?.checkin_address ||
     '-';
-  const customerImage = resolveMediaUrl(
-    item?.shop_image || item?.shop_photo || item?.owner_photo || item?.profile_image,
-  );
+  const customerImage =
+    item?.shop_image || item?.shop_photo || item?.owner_photo || item?.profile_image;
   function isCheckoutBeforeCheckin(checkinDate: any, checkinTime: any, checkoutDate: any, checkoutTime: any) {
     // Combine date + time into full ISO strings
     const checkinStr = `${checkinDate}T${checkinTime}`;
@@ -392,10 +391,8 @@ const CustomerCard: React.FC<SolarCardProps> = ({
     <Pressable style={[styles.cardContainer, shadowStyle]} onPress={() => navigation?.navigate("CustomerDetails", { item, isPunchedIn: isPunchedIn })}>
       {
         !type && (
-          <FastImage
-            source={customerImage
-              ? { uri: customerImage }
-              : require('../../assets/images/Dummy/Customer2.png')}
+          <MediaImage
+            path={customerImage}
             style={styles.mainImage}
             resizeMode="cover"
           />

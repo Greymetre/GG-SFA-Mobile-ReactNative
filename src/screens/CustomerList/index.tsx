@@ -12,6 +12,7 @@ import { DATA } from '../../components/Comman/CommanFunction';
 import CustomerCard from '../../components/atoms/CustomerCard';
 import { getCustomersByTypeFiltersApi, getOpenCheckinApi, useGetUserCityListApi, useMutateBeatCustomerList, useMutateCustomerListApi, useMutateCustomerTypeListApi, useMutateSecondaryCustListApi } from '../../api/query/CustomerApi';
 import SecondaryCustomerCard from '../../components/atoms/SecondaryCustomerCard';
+import { mechanicCategoryColour } from '../../components/atoms/MechanicCategoryBadge';
 import Geolocation from '@react-native-community/geolocation';
 import Toast from 'react-native-toast-message';
 import store from '../../components/redux/Store';
@@ -53,6 +54,11 @@ const CustomerList = ({ route }: any) => {
   const isSecondary = !!route?.params?.type && !isCustomerTypeList;
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(null);
+  // Beat list: all / visited / remaining counters, opened from the Beats screen tiles
+  const [beatVisit, setBeatVisit] = useState<'all' | 'visited' | 'remaining'>(route?.params?.visit || 'all');
+  // Mechanic list: Gajra Gro milestone category filter
+  const isMechanicList = isCustomerTypeList && /mechanic/i.test(String(customerTypeName || ''));
+  const [mechanicCategory, setMechanicCategory] = useState<string>('All');
   const [hasMore, setHasMore] = useState(true);
 
   const [showCityModal, setShowCityModal] = useState(false);
@@ -99,16 +105,16 @@ const CustomerList = ({ route }: any) => {
       // setSelectedStatus('All')
       // setSearchText('')
       // setSelectedUser(null)
-    }, [selectedStatus, selectedCity, selectedUser])
+    }, [selectedStatus, selectedCity, selectedUser, beatVisit, mechanicCategory])
   )
 
   // Option A: Fixed title (recommended for most cases)
   useFocusEffect(
     useCallback(() => {
       navigation.setOptions({
-        headerTitle: `${customerTypeName || 'Customers'}${total ? ` (${total})` : ''}`,
+        headerTitle: `${route?.params?.beatName || customerTypeName || 'Customers'}${total ? ` (${total})` : ''}`,
       });
-    }, [navigation, total, customerTypeName])
+    }, [navigation, total, customerTypeName, route?.params?.beatName])
   );
 
 
@@ -320,6 +326,8 @@ const CustomerList = ({ route }: any) => {
               : overrideStatus ?? selectedStatus,
           city_name: clearCity ? null : overrideCity?.city_name ?? selectedCity?.city_name,
           // for_user_id: clearUser ? null : overrideUser?.id ?? selectedUser?.id,
+          beatscheduleid: route?.params?.beatScheduleId,
+          visit: beatVisit,
         });
       } else if (isCustomerTypeList) {
         res = await mutateCustomerTypeList({
@@ -329,6 +337,7 @@ const CustomerList = ({ route }: any) => {
           pageSize: 5,
           city_name: clearCity ? undefined : overrideCity?.city_name ?? selectedCity?.city_name,
           for_user_id: clearUser ? undefined : overrideUser?.id ?? selectedUser?.id,
+          mechanic_category: isMechanicList && mechanicCategory !== 'All' ? mechanicCategory : undefined,
         });
       } else if (isSecondary) {
         res = await mutateSecondaryCustList({
@@ -396,7 +405,7 @@ const CustomerList = ({ route }: any) => {
       setLoader(false);
       setLoader1(false)
     }
-  }, [searchText, isCustomerTypeList, customerTypeId, isSecondary, selectedStatus, selectedCity, selectedUser, navigation, route]);
+  }, [searchText, isCustomerTypeList, customerTypeId, isSecondary, selectedStatus, selectedCity, selectedUser, navigation, route, beatVisit, isMechanicList, mechanicCategory]);
 
 
   const clearFilters = () => {
@@ -449,6 +458,42 @@ const CustomerList = ({ route }: any) => {
             </Pressable>
           )}
         </View>
+        {
+          !!route?.params?.beatId && (
+            <View style={[styles.row, { gap: 8, marginTop: 15 }]}>
+              {([
+                { key: 'all', label: 'All', color: '#2B2B2B' },
+                { key: 'visited', label: 'Visited', color: '#1B7F4B' },
+                { key: 'remaining', label: 'Remaining', color: '#A87A00' },
+              ] as const).map(option => {
+                const selected = beatVisit === option.key;
+                return (
+                  <Pressable
+                    key={option.key}
+                    onPress={() => {
+                      if (selected) return;
+                      setLoader1(true);
+                      setPage(1);
+                      setBeatVisit(option.key);
+                    }}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      borderWidth: 1.5,
+                      borderColor: option.color,
+                      backgroundColor: selected ? option.color : 'transparent',
+                    }}
+                  >
+                    <AppText size={12} family="InterSemiBold" color={selected ? 'white' : option.color}>
+                      {option.label}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )
+        }
         {
           (route?.params?.type || isCustomerTypeList) && (
             <View style={[styles.row, { gap: 13, marginVertical: 15 }]}>
@@ -508,6 +553,44 @@ const CustomerList = ({ route }: any) => {
           )
         }
 
+        {
+          isMechanicList && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              // fixed height: a horizontal ScrollView above the list would otherwise be squeezed and clip the chips
+              style={{ flexGrow: 0, flexShrink: 0, height: 44, marginHorizontal: -rw(18), marginBottom: 10 }}
+              contentContainerStyle={{ paddingHorizontal: rw(18), gap: 8, alignItems: 'center' }}
+            >
+              {['All', 'Platinum', 'Diamond', 'Gold', 'Silver', 'Bronze', 'Not classified'].map(name => {
+                const selected = mechanicCategory === name;
+                const color = name === 'All' ? '#2B2B2B' : mechanicCategoryColour(name === 'Not classified' ? null : name);
+                return (
+                  <Pressable
+                    key={name}
+                    onPress={() => {
+                      if (selected) return;
+                      setLoader1(true);
+                      setPage(1);
+                      setMechanicCategory(name);
+                    }}
+                    style={{
+                      height: 34,
+                      paddingHorizontal: 14,
+                      borderRadius: 17,
+                      borderWidth: 1.5,
+                      borderColor: color,
+                      backgroundColor: selected ? color : 'white',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AppText size={13} family="InterSemiBold" color={selected ? 'white' : color}>{name}</AppText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )
+        }
         {
           loader1 && page == 1 ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

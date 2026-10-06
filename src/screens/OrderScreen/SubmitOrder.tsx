@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, TextInput, TouchableOpacity, View } from 'react-native';
 import { ArrowDownIcon } from '../../assets/svgs/SvgsFile';
 import AppText from '../../components/AppText/AppText';
@@ -17,6 +17,7 @@ import { API_ENDPOINT } from '../../api/ApiUrls';
 interface OrderItem {
     id: string;               // unique key
     productName: string;
+    ggNo?: string;            // product_no
     quantity: number;
     rate: number;             // editable
     amount: number;           // calculated = qty × rate
@@ -88,6 +89,11 @@ const TableRow: React.FC<TableRowProps> = ({ item, onRateChange, onRemove }) => 
                 <AppText size={14} color="#333333" family="InterRegular">
                     {item.productName}
                 </AppText>
+                {!!item.ggNo && (
+                    <AppText size={12} color="#6B7280" family="InterMedium" style={{ marginTop: 2 }}>
+                        GG No: {item.ggNo}
+                    </AppText>
+                )}
             </View>
 
             <View style={{ width: '15%', alignItems: 'center' }}>
@@ -196,11 +202,11 @@ const isSameId = (a?: number | string | null, b?: number | string | null) =>
 const isRetailerType = (typeId: any, typeName: any, retailerId?: number | string) =>
     isSameId(typeId, retailerId) || String(typeName || '').toLowerCase().includes('retailer');
 
+// Seller dropdown of a retailer order: distributor customer types only
 const isDistributorOrDealerType = (typeName: any) => {
     const normalized = String(typeName || '').toLowerCase();
-    const isDealerOrDistributor = normalized.includes('distributor') || normalized.includes('dealer');
     const isOldCustomerType = normalized.includes('master') || normalized.includes('secondary');
-    return isDealerOrDistributor && !isOldCustomerType;
+    return normalized.includes('distributor') && !isOldCustomerType;
 };
 
 const normalizeParentCustomerIds = (...sources: any[]): string[] => {
@@ -229,15 +235,6 @@ const getAssignedParentIds = (customer: any): string[] => normalizeParentCustome
     customer?.agri_distributor,
 );
 
-const getParentRecords = (payload: any): any[] => [
-    payload?.distributor,
-    payload?.parent_customer,
-    ...(Array.isArray(payload?.parent_customers) ? payload.parent_customers : []),
-    ...(Array.isArray(payload?.parents) ? payload.parents : []),
-    ...(Array.isArray(payload?.distributors) ? payload.distributors : []),
-    ...(payload?.data && payload.data !== payload ? getParentRecords(payload.data) : []),
-].filter(Boolean);
-
 const SubmitOrder = () => {
     const route = useRoute();
     const { cartItems, updateCart, routeData } = route.params;
@@ -264,7 +261,6 @@ const SubmitOrder = () => {
     const [selectedCustomerTypeId, setSelectedCustomerTypeId] = useState<number | string | null>(routeCustomerTypeId || null);
     const [selectedCustomerTypeName, setSelectedCustomerTypeName] = useState<string>(type || routeData?.customer_type || '');
     const [selectedDistributor, setSelectedDistributor] = useState<number | string | null>(null);
-    const parentLookupsInFlight = useRef<Set<string>>(new Set());
     const [assignedParentIds, setAssignedParentIds] = useState<string[]>(
         getAssignedParentIds(routeData),
     );
@@ -278,6 +274,11 @@ const SubmitOrder = () => {
         selectedCustomerTypeName,
         customerTypeIds.retailer
     );
+    // Mechanic order: optional parent of any other customer type (sent as the seller when chosen)
+    const selectedCustomerIsMechanic = String(selectedCustomerTypeName || '').toLowerCase().includes('mechanic');
+    const [mechanicParentList, setMechanicParentList] = useState<DropdownItem[]>([]);
+    const [selectedMechanicParent, setSelectedMechanicParent] = useState<number | string | null>(null);
+    const [mechanicParentLoading, setMechanicParentLoading] = useState(false);
 
     const fetchCustomerTypes = useCallback(async () => {
         try {
@@ -325,8 +326,9 @@ const SubmitOrder = () => {
         try {
             const res = await axiosClient.get(API_ENDPOINT.GET_CUSTOMER_LIST, {
                 params: {
+                    // the backend limits it to the user's reporting team
                     customer_type_id: customerTypeId,
-                    pageSize: 100,
+                    pageSize: 500,
                     page: 1,
                 },
             });
@@ -368,22 +370,8 @@ const SubmitOrder = () => {
                 ...getAssignedParentIds(responsePayload),
                 ...getAssignedParentIds(responsePayload?.data),
             );
-            const resolvedParentOptions = getParentRecords(responsePayload)
-                .map((parent: any) => ({
-                    label: getCustomerDisplayName(parent),
-                    value: parent?.customer_id ?? parent?.parent_id ?? parent?.id ?? parent?.value,
-                    raw: parent,
-                }))
-                .filter((parent: DropdownItem) => parent.label && parent.value != null);
-            if (resolvedParentOptions.length) {
-                setDistributorList(previous => {
-                    const resolvedIds = new Set(resolvedParentOptions.map((option: DropdownItem) => String(option.value)));
-                    return [
-                        ...resolvedParentOptions,
-                        ...previous.filter(option => !resolvedIds.has(String(option.value))),
-                    ];
-                });
-            }
+            // The retailer's saved parent is only pre-selected when it is one of the user's own distributors
+            // (the dropdown lists only distributors assigned to the user's reporting team); never added to it.
             setAssignedParentIds(ids);
         } catch (error) {
             console.log('Retailer parent customer info error', error);
@@ -437,71 +425,65 @@ const SubmitOrder = () => {
             return true;
         });
 
-        // Merge instead of replace. The assigned parent may have been inserted
-        // from customer details while this paginated request was in flight.
-        setDistributorList(previous => {
-            const allOptions = [...previous, ...merged];
-            const optionIds = new Set<string>();
-            return allOptions.filter((option) => {
-                const key = String(option.value);
-                if (optionIds.has(key)) return false;
-                optionIds.add(key);
-                return true;
-            });
-        });
+        // Only the distributors assigned to the user's reporting team (getCustomerList)
+        setDistributorList(merged);
+        setSelectedDistributor(current =>
+            current != null && !merged.some((option) => isSameId(option.value, current)) ? null : current,
+        );
+    }, [customerTypeList, getCustomersByType]);
+
+    // Every customer type except mechanic (and the old customer models), in one call; only the user's team's customers
+    const fetchMechanicParentOptions = useCallback(async () => {
+        const typeIds = customerTypeList
+            .filter((item) => {
+                const name = String(item.name || '').toLowerCase();
+                return name && !name.includes('mechanic') && !name.includes('master') && !name.includes('secondary');
+            })
+            .map((item) => item.value);
+        if (!typeIds.length) {
+            setMechanicParentList([]);
+            return;
+        }
+        setMechanicParentLoading(true);
+        const options = await getCustomersByType(typeIds.join(','));
+        setMechanicParentList(options.map((option: DropdownItem) => ({
+            ...option,
+            label: [option.customerTypeName, option.label].filter(Boolean).join(' - '),
+        })));
+        setMechanicParentLoading(false);
     }, [customerTypeList, getCustomersByType]);
 
     useEffect(() => {
-        if (!selectedCustomerIsRetailer) return;
+        if (selectedCustomerIsMechanic) {
+            fetchMechanicParentOptions();
+        } else {
+            setMechanicParentList([]);
+            setSelectedMechanicParent(null);
+        }
+    }, [fetchMechanicParentOptions, selectedCustomerIsMechanic]);
 
-        const parentToSelect = selectedDistributor || assignedParentIds[0];
-        if (!parentToSelect) return;
+    // Pre-select the mechanic's saved parent when it is in the list
+    useEffect(() => {
+        if (!selectedCustomerIsMechanic || selectedMechanicParent || !mechanicParentList.length) return;
+        const matched = mechanicParentList.find((option) =>
+            assignedParentIds.some((parentId) => isSameId(option.value, parentId)),
+        );
+        if (matched) setSelectedMechanicParent(matched.value);
+    }, [assignedParentIds, mechanicParentList, selectedCustomerIsMechanic, selectedMechanicParent]);
+
+    // Pre-select the retailer's assigned parent if it is in the user's distributor list
+    useEffect(() => {
+        if (!selectedCustomerIsRetailer || selectedDistributor || !distributorList.length) return;
 
         const matchedOption = distributorList.find((option) =>
-            isSameId(option.value, parentToSelect),
+            assignedParentIds.some((parentId) => isSameId(option.value, parentId)),
         );
         if (matchedOption) {
-            if (!selectedDistributor) setSelectedDistributor(matchedOption.value);
-            return;
+            setSelectedDistributor(matchedOption.value);
+        } else if (distributorList.length === 1) {
+            // only one distributor for this user: select it
+            setSelectedDistributor(distributorList[0].value);
         }
-
-        const lookupKey = String(parentToSelect);
-        if (parentLookupsInFlight.current.has(lookupKey)) return;
-        parentLookupsInFlight.current.add(lookupKey);
-
-        axiosClient.get(API_ENDPOINT.GET_CUSTOMER_INFO, {
-            params: { customer_id: parentToSelect },
-        }).then((response) => {
-            const payload = response?.data;
-            const candidates = [
-                payload?.data?.data,
-                payload?.data?.customer,
-                payload?.data,
-                payload?.customer,
-                payload,
-                ...getParentRecords(payload),
-            ].filter(Boolean);
-            const parent = candidates.find((candidate: any) =>
-                isSameId(candidate?.customer_id ?? candidate?.id ?? candidate?.value, parentToSelect),
-            ) || candidates.find((candidate: any) => getCustomerDisplayName(candidate));
-            const realName = getCustomerDisplayName(parent);
-            if (!realName) return;
-
-            const resolvedOption: DropdownItem = {
-                label: realName,
-                value: parentToSelect,
-                raw: parent,
-            };
-            setDistributorList(previous => [
-                resolvedOption,
-                ...previous.filter(option => !isSameId(option.value, parentToSelect)),
-            ]);
-            setSelectedDistributor(parentToSelect);
-        }).catch((error) => {
-            console.log('Assigned parent customer lookup error', error);
-        }).finally(() => {
-            parentLookupsInFlight.current.delete(lookupKey);
-        });
     }, [assignedParentIds, distributorList, selectedCustomerIsRetailer, selectedDistributor]);
 
     useEffect(() => {
@@ -539,6 +521,7 @@ const SubmitOrder = () => {
                 return {
                     id: item.productId,
                     productName: item.productName,
+                    ggNo: item.ggNo || '',
                     quantity: item.quantity,
                     rate: price,
                     amount: item.quantity * price,    // ← correct calculation
@@ -576,6 +559,9 @@ const SubmitOrder = () => {
                 productId: item.id,
                 productName: item.productName,
                 quantity: item.quantity,
+                // keep the price and GG No when going back to the catalogue
+                price: item.rate,
+                ggNo: item.ggNo,
             }));
 
             if (updateCart) {
@@ -651,7 +637,12 @@ const SubmitOrder = () => {
                 line_total: item.amount,
             }));
 
-            const sellerId = selectedCustomerIsRetailer ? selectedDistributor : selectedRetailer;
+            // Mechanic: the chosen parent sells; without one the order goes as before (seller = the mechanic)
+            const sellerId = selectedCustomerIsRetailer
+                ? selectedDistributor
+                : selectedCustomerIsMechanic && selectedMechanicParent
+                    ? selectedMechanicParent
+                    : selectedRetailer;
 
             // ✅ Payload
             const body = {
@@ -766,6 +757,7 @@ const SubmitOrder = () => {
                             setSelectedCustomerTypeName(item.customerTypeName || selectedCustomerTypeName);
                             setAssignedParentIds(getAssignedParentIds(item.raw));
                             setSelectedDistributor(null);
+                            setSelectedMechanicParent(null);
                             if (selectedCustomerIsRetailer) {
                                 fetchAssignedParentsForRetailer(item.value, item.raw);
                             }
@@ -789,8 +781,8 @@ const SubmitOrder = () => {
                             maxHeight={300}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select Distributor / Dealer"
-                            searchPlaceholder={"Select Distributor / Dealer"}
+                            placeholder="Select Distributor"
+                            searchPlaceholder="Search distributor..."
                             value={selectedDistributor}
                             onChange={(item) => {
                                 setSelectedDistributor(item.value);
@@ -798,6 +790,30 @@ const SubmitOrder = () => {
                             renderRightIcon={() => <ArrowDownIcon />}
                         />
 
+                    </View>
+                )}
+
+                {selectedCustomerIsMechanic && selectedRetailer && (
+                    <View style={{ flex: 1, marginTop: 0 }}>
+                        <Dropdown
+                            style={styles.selectUser}
+                            placeholderStyle={{ color: '#718096', fontSize: 14 }}
+                            selectedTextStyle={{ color: colors.black, fontSize: 14 }}
+                            inputSearchStyle={{ height: 40, fontSize: 14 }}
+                            data={mechanicParentList}
+                            search
+                            maxHeight={300}
+                            labelField="label"
+                            valueField="value"
+                            placeholder={mechanicParentLoading ? 'Loading...' : 'Select Parent Customer (optional)'}
+                            searchPlaceholder="Search customer..."
+                            value={selectedMechanicParent}
+                            disable={mechanicParentLoading}
+                            onChange={(item) => {
+                                setSelectedMechanicParent(item.value);
+                            }}
+                            renderRightIcon={() => <ArrowDownIcon />}
+                        />
                     </View>
                 )}
 

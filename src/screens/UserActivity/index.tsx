@@ -153,18 +153,23 @@ const UserActivityScreen = ({ navigation, route }: any) => {
     const zoneName = String(route?.params?.zone || '').replace(/\s+zone$/i, '').trim();
     if (!zoneName) return;
 
+    // The dashboard sends a zone or a sub zone name
+    const matchedSubZone = branches.find(branch => branch.label.toLowerCase() === zoneName.toLowerCase());
+    const parentZone = matchedSubZone
+      ? zones.find(zone => zone.id?.toString() === matchedSubZone.zone_id?.toString())
+      : undefined;
     setSelectedZone(current => {
-      const matchedZone = zones.find(zone => zone.label.toLowerCase() === zoneName.toLowerCase());
+      const matchedZone = zones.find(zone => zone.label.toLowerCase() === zoneName.toLowerCase()) || parentZone;
       return matchedZone || (
         current?.label.toLowerCase() === zoneName.toLowerCase()
           ? current
           : { label: zoneName, value: zoneName, id: null }
       );
     });
-    setSelectedBranch(null);
+    setSelectedBranch(matchedSubZone && !zones.some(zone => zone.label.toLowerCase() === zoneName.toLowerCase()) ? matchedSubZone : null);
     setSelectedUser(null);
     setCurrentPage(1);
-  }, [route?.params?.zone, zones]);
+  }, [route?.params?.zone, zones, branches]);
 
   // Format date to YYYY-MM-DD
   const formatYYYYMMDD = (date: Date): string => {
@@ -246,7 +251,8 @@ const UserActivityScreen = ({ navigation, route }: any) => {
       if (!token) return;
 
       const response = await fetch(
-        `${BASE_URL}api/user-attendance-zone-branch`,
+        // zone_master: zones from Zone Master, branches = their sub zones
+        `${BASE_URL}api/user-attendance-zone-branch?source=zone_master`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -292,10 +298,10 @@ const UserActivityScreen = ({ navigation, route }: any) => {
           },
           body: JSON.stringify({
             search_name: selectedUser?.id || null,
-            zone: selectedZone?.label || null,
-            zone_id: selectedZone?.id || null,
-            branch: selectedBranch?.label || null,
-            branch_id: selectedBranch?.id || null,
+            zone_master_id: selectedZone?.id || null,
+            sub_zone_id: selectedBranch?.id || null,
+            // a zone name from the dashboard that is not in Zone Master: old users.zone filter
+            zone: selectedZone && !selectedZone.id ? selectedZone.label : null,
             designation: selectedDesignations.length > 0 ? selectedDesignations.join(',') : null,
             start_date: formatYYYYMMDD(startDate),
             end_date: formatYYYYMMDD(endDate),
@@ -358,10 +364,9 @@ const UserActivityScreen = ({ navigation, route }: any) => {
             startdate: formatYYYYMMDD(startDate),
             enddate: formatYYYYMMDD(endDate),
             user_id: selectedUser?.id,
-            zone: selectedZone?.label,
-            zone_id: selectedZone?.id,
-            branch: selectedBranch?.label,
-            branch_id: selectedBranch?.id,
+            zone_master_id: selectedZone?.id || undefined,
+            sub_zone_id: selectedBranch?.id || undefined,
+            zone: selectedZone && !selectedZone.id ? selectedZone.label : undefined,
             designation: selectedDesignations.length > 0 ? selectedDesignations.join(',') : undefined,
           },
         }
@@ -493,8 +498,8 @@ const UserActivityScreen = ({ navigation, route }: any) => {
                 maxHeight={300}
                 labelField="label"
                 valueField="value"
-                placeholder="Select Branch"
-                searchPlaceholder="Search branch..."
+                placeholder="Select Sub Zone"
+                searchPlaceholder="Search sub zone..."
                 value={selectedBranch?.value}
                 onFocus={() => setIsBranchFocus(true)}
                 onBlur={() => setIsBranchFocus(false)}

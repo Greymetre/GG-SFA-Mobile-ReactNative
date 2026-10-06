@@ -36,6 +36,7 @@ export const API_ENDPOINT = {
   GET_CUSTOMER_GRADES: "api/getCustomerGrades",
   CUSTOMERS_BY_TYPE_FILTERS: "api/customersByType/filters",
   GET_CUSTOMER_INFO: "api/getCustomerInfo",
+  CUSTOMER_VISITS: "api/customer-visits",
   STORE_CUSTOMER: "api/storeCustomer",
   UPDATE_CUSTOMER_PROFILE: "api/updateCustomerProfile",
   SECONDARY_CUSTOMER: "api/secondary-customers",
@@ -76,5 +77,7 @@ export const API_ENDPOINT = {
   ASM_RATING: "api/asm-rating",
   ASM_RATING_DETAIL: "api/asm-rating/",
   GAJRA_GRO: "api/gajra-gro",
+  GAJRA_GRO_SCHEMES: "api/gajra-gro/schemes",
+  GAJRA_GRO_REDEMPTIONS: "api/gajra-gro/redemptions",
 
 };

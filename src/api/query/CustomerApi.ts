@@ -29,7 +29,9 @@ export const useMutateCustomerTypeListApi = () => {
             pageSize = 5,
             city_name,
             for_user_id,
+            mechanic_category,
         }: {
+            mechanic_category?: string;
             customer_type_id: string | number;
             search?: string;
             page?: number;
@@ -53,6 +55,11 @@ export const useMutateCustomerTypeListApi = () => {
 
             if (for_user_id) {
                 params.for_user_id = for_user_id;
+            }
+
+            // Mechanics: Platinum / Diamond / Gold / Silver / Bronze / Not classified
+            if (mechanic_category) {
+                params.mechanic_category = mechanic_category;
             }
 
             // User's (and team's) customers of one type, paginated
@@ -141,12 +148,22 @@ export const useMutateBeatCustomerList = () => {
             page,
             status,
             city_name,
+            beatscheduleid,
+            visit,
         }: any) => {
 
             const params: any = {
                 page: page || 1,
                 per_page: 10,
             };
+
+            // Beats screen: visited = checked in during this beat schedule; visit: visited | remaining
+            if (beatscheduleid) {
+                params.beatscheduleid = beatscheduleid;
+            }
+            if (visit === 'visited' || visit === 'remaining') {
+                params.visit = visit;
+            }
 
             if (search?.trim()) {
                 params.search = search.trim();
@@ -414,3 +431,25 @@ export const useChangeAttendanceStatus = () => {
         // Optional: you can add optimistic updates or refetch logic later
     });
 };
+
+// Visit history of one customer (check-in / check-out by any user), newest first, 20 per page
+export type CustomerVisit = {
+    id: number;
+    user_id: number;
+    user_name: string;
+    user_mobile: string;
+    checkin_date: string | null;
+    checkin_time: string | null;
+    checkin_address: string;
+    checkout_date: string | null;
+    checkout_time: string | null;
+    checkout_address: string;
+    duration_minutes: number | null;
+    distance: number | string | null;
+    report_title: string;
+    report_description: string;
+    orders: { count: number; value: number } | null;
+};
+
+export const getCustomerVisitsApi = (customer_id: number | string, page = 1) =>
+    axiosClient.get(API_ENDPOINT.CUSTOMER_VISITS, { params: { customer_id, page } });

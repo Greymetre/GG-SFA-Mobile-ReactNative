@@ -35,7 +35,68 @@ export type GajraGroReport = {
     categories: { category: GroCategory; count: number }[];
   };
   rows: GroMechanic[];
+  target?: GroTarget | null;
+};
+
+// Logged-in user's own mechanic target (current financial year) and achievement per category
+export type GroTarget = {
+  has_target: boolean;
+  financial_year: string; // 'FY 2026-27'
+  period: string; // 12 months the categories are counted on
+  target: number;
+  achieved: number;
+  percent: number | null;
+  categories: { category: GroCategory; target: number; achieved: number }[];
 };
 
 // Gajra Gro mechanics among the logged-in user's team's customers
 export const getGajraGroApi = () => axiosClient.get(API_ENDPOINT.GAJRA_GRO);
+
+export type GroSchemeStatus = 'Running' | 'Upcoming' | 'Expired';
+
+// A Gajra Gro loyalty scheme (live from Gajra Gro)
+export type GroScheme = {
+  id: string;
+  name: string;
+  description: string;
+  image: string; // full URL, '' when none
+  type: string; // 'Coupon Scan' ...
+  audience: 'Mechanic' | 'Retailer' | ''; // from the scheme name
+  startedAt: string | null;
+  endedAt: string | null;
+  status: GroSchemeStatus;
+};
+
+export type GroRedemptionPeriod = 'month' | '3m' | '12m';
+
+// A team mechanic's Gajra Gro points redeemed in the period
+export type GroRedemption = {
+  customer_id: number;
+  firm_name: string;
+  contact_person: string;
+  mobile: string;
+  city: string;
+  dealer: string;
+  category: GroCategory | null;
+  redeemed: number;
+  earned: number;
+  last_redeemed_month: string; // 'Sep 2026'
+};
+
+export type GroRedemptionPage = {
+  period: GroRedemptionPeriod;
+  period_label: string;
+  page: number;
+  total: number;
+  has_more: boolean;
+  synced_at: string | null;
+  summary: { mechanics: number; redeemed: number; earned: number };
+  rows: GroRedemption[];
+};
+
+// Running / upcoming / recently expired Gajra Gro schemes
+export const getGajraGroSchemesApi = () => axiosClient.get(API_ENDPOINT.GAJRA_GRO_SCHEMES);
+
+// Gajra Gro points redeemed by the user's team's mechanics, most redeemed first
+export const getGajraGroRedemptionsApi = (params: { page?: number; period?: GroRedemptionPeriod; search?: string }) =>
+  axiosClient.get(API_ENDPOINT.GAJRA_GRO_REDEMPTIONS, { params });

@@ -35,15 +35,18 @@ const ChevronRight = ({ color = '#9AA1AC' }: { color?: string }) => (
     </Svg>
 );
 
-const StatTile = ({ label, value, tone }: { label: string; value: any; tone: typeof STAT_TOTAL }) => (
-    <View style={[styles.statTile, { backgroundColor: tone.bg, borderColor: tone.border }]}>
+const StatTile = ({ label, value, tone, onPress }: { label: string; value: any; tone: typeof STAT_TOTAL; onPress: () => void }) => (
+    <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.statTile, { backgroundColor: tone.bg, borderColor: tone.border }, pressed && styles.cardPressed]}
+    >
         <AppText size={20} family="InterBold" color={tone.value} align="center">
             {Number(value ?? 0)}
         </AppText>
         <AppText size={11} family="InterMedium" color={tone.label} align="center" transform="uppercase" spacing={0.4}>
             {label}
         </AppText>
-    </View>
+    </Pressable>
 );
 
 const BeatsScreen = () => {
@@ -120,19 +123,23 @@ const BeatsScreen = () => {
         const visited = Number(item?.visited_customers ?? 0);
         const percent = total > 0 ? Math.min(100, Math.round((visited / total) * 100)) : 0;
         const done = total > 0 && visited >= total;
+        // Card / Total: all counters of the beat; Visited / Remaining: only those
+        const openCustomers = (visit: 'all' | 'visited' | 'remaining') => {
+            navigation.navigate("CustomerList", {
+                type: 'RETAILER',
+                beatId: item.beat_id,
+                beatName: item.beat_name,
+                beatDate: item.beat_date,
+                beatScheduleId: item.beatscheduleid,
+                visit,
+            })
+        };
 
         return (
             <Pressable
                 style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                 android_ripple={{ color: '#00000010' }}
-                onPress={() => {
-                    navigation.navigate("CustomerList", {
-                        type: 'RETAILER',
-                        beatId: item.beat_id,
-                        beatName: item.beat_name,
-                        beatDate: item.beat_date,
-                    })
-                }}>
+                onPress={() => openCustomers('all')}>
                 {/* Beat name + counter count */}
                 <View style={styles.cardHeader}>
                     <View style={styles.accentBar} />
@@ -164,9 +171,9 @@ const BeatsScreen = () => {
 
                 {/* Counter breakdown */}
                 <View style={styles.statRow}>
-                    <StatTile label="Total" value={total} tone={STAT_TOTAL} />
-                    <StatTile label="Visited" value={visited} tone={STAT_VISITED} />
-                    <StatTile label="Remaining" value={item?.remaining_customers} tone={STAT_REMAINING} />
+                    <StatTile label="Total" value={total} tone={STAT_TOTAL} onPress={() => openCustomers('all')} />
+                    <StatTile label="Visited" value={visited} tone={STAT_VISITED} onPress={() => openCustomers('visited')} />
+                    <StatTile label="Remaining" value={item?.remaining_customers} tone={STAT_REMAINING} onPress={() => openCustomers('remaining')} />
                 </View>
             </Pressable>
         );

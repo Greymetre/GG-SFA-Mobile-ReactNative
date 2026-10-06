@@ -26,7 +26,6 @@ import SpinningGear from '../../components/atoms/SpinningGear'
 const data = [
   { id: 1, name: 'My Profile', icon: 'M12 11.5a4 4 0 100-8 4 4 0 000 8zM4.5 20.5c0-3.9 3.4-6.5 7.5-6.5s7.5 2.6 7.5 6.5' },
   { id: 9, name: 'Tour Plan', icon: 'M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v11a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5zM4 10h16M8.5 3v4M15.5 3v4M12 18s-2.5-2.1-2.5-3.8a2.5 2.5 0 015 0C14.5 15.9 12 18 12 18z' },
-  { id: 10, name: 'News', icon: 'M5 4.5h11a1.5 1.5 0 011.5 1.5v12.5a2 2 0 002 2H6.5A2.5 2.5 0 014 18V5.5a1 1 0 011-1zM17.5 8.5h1.5a1 1 0 011 1v9a2 2 0 01-2 2M7.5 8.5h6.5M7.5 12h6.5M7.5 15.5h4' },
   { id: 3, name: 'Report', icon: 'M4 20.5h16M7 16.5v-5M12 16.5v-10M17 16.5v-7' },
   { id: 4, name: 'Documents', icon: 'M14 3H7.5A2.5 2.5 0 005 5.5v13A2.5 2.5 0 007.5 21h9a2.5 2.5 0 002.5-2.5V8zM14 3v5h5M9 13h6M9 16.5h4' },
   { id: 6, name: 'Logout', icon: 'M14 4h3.5A2.5 2.5 0 0120 6.5v11a2.5 2.5 0 01-2.5 2.5H14M10 16.5L5.5 12 10 7.5M5.5 12H15' },
@@ -238,10 +237,6 @@ const ProfileTab = ({ handleDrawerClose }: any) => {
                     }
                     else if (item?.name == "Documents") {
                       navigation.navigate('Documents')
-                      handleDrawerClose()
-                    }
-                    else if (item?.name == "News") {
-                      navigation.navigate('News')
                       handleDrawerClose()
                     }
                     else if (item?.name == "Tour Plan") {

@@ -7,9 +7,11 @@ import FastImage from 'react-native-fast-image'
 import { BuyOrderIcon, CalenderAddIcon, CalenderIcon, CrossIcon, OrderBoxIcon, OrderHistoryIcon } from '../../assets/svgs/SvgsFile'
 import { colors } from '../../utils/Colors'
 import { getOpenCheckinApi, useGetCustomerData, useGetSecondaryCustomerData, useGetSubmitCheckIN } from '../../api/query/CustomerApi'
-import { resolveMediaUrl, resolveWorkingMediaUrl } from '../../api/AxiosClient'
+import { resolveWorkingMediaUrl } from '../../api/AxiosClient'
 import MediaImage from '../../components/atoms/MediaImage'
-import { CheckIcon } from '../../assets/svgs/HomePageSvgs'
+import CustomerVisitHistory from '../../components/atoms/CustomerVisitHistory'
+import MechanicCategoryBadge, { isMechanicCustomer, mechanicCategoryColour } from '../../components/atoms/MechanicCategoryBadge'
+import { CheckIcon, EmailIcon, LocationIcon, PhoneICon, WhatsappICon } from '../../assets/svgs/HomePageSvgs'
 import Toast from 'react-native-toast-message'
 import Geolocation from '@react-native-community/geolocation'
 import { useFocusEffect } from '@react-navigation/native'
@@ -33,6 +35,7 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
   const [data, setData] = useState<any>(null)
   const [checkInHanlde, seCheckInHandle] = useState<any>(null)
   const [modalVisible, setModalVisible] = useState(false);
+  const [visitHistoryVisible, setVisitHistoryVisible] = useState(false);
   const [images, setImages] = useState<string[]>([]); // always array
   const galleryRef = useRef<GalleryRef>(null);
   const [initialIndex, setInitialIndex] = useState(0);
@@ -160,6 +163,13 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
             remark: data?.remark || '',
             created_by: data?.created_by || '',
             creator: data?.creator?.name || '',
+            is_mechanic: !!data?.is_mechanic,
+            mechanic_category: data?.mechanic_category || null,
+            total_order_value: data?.total_order_value,
+            last_visited: data?.last_visited || '',
+            last_order_date: data?.last_order_date || '',
+            total_points: data?.total_points,
+            total_coupon_scan: data?.total_coupon_scan,
           });
 
         } else {
@@ -311,9 +321,86 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
     setInitialIndex(0)
     setModalVisible(true)
   }
+  const nameOf = (value: any, key: string) =>
+    (value && typeof value === 'object' ? value?.[key] : value) || ''
+  const cityName = nameOf(customerData?.city, 'city_name') || nameOf(customerData?.billing_city, 'city_name')
+  const pincode = nameOf(customerData?.billing_pincode, 'pincode')
+  const customerAddress = [customerData?.billing_address || customerData?.address_line, cityName, pincode]
+    .map(part => String(part || '').trim().replace(/,+$/, ''))
+    .filter(Boolean)
+    .join(', ')
+  const customerStatus = String(customerData?.status || '')
+  const statusColor = /reject/i.test(customerStatus)
+    ? '#D64545'
+    : /approv|active/i.test(customerStatus)
+      ? '#339D4F'
+      : '#C98A00'
+  const lastCheckinDatetime = customerData?.check_status?.last_checkin?.checkin_datetime
+  const lastCheckinText = lastCheckinDatetime && !isNaN(new Date(lastCheckinDatetime).getTime())
+    ? new Date(lastCheckinDatetime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : ''
+  const primaryMobile = customerData?.mobile
+    ? formatMobileNumberList(customerData.mobile)[0] || normalizeIndianMobileNumber(customerData.mobile)
+    : ''
+  const dashboardInfo = [
+    { label: 'Owner / Contact', value: customerData?.contact_person || customerData?.owner_name },
+    { label: 'Mobile', value: primaryMobile ? `+91 ${primaryMobile}` : '' },
+    { label: 'City', value: cityName },
+    { label: 'State', value: nameOf(customerData?.state, 'state_name') },
+    { label: route?.params?.type ? 'Beat' : 'Customer Code', value: route?.params?.type ? customerData?.beat_name : customerData?.distributor_code },
+    { label: route?.params?.type ? 'Distributor' : 'GSTIN', value: route?.params?.type ? customerData?.distributor_name : customerData?.gst_number },
+  ]
+
+  const isMechanic = isMechanicCustomer(customerData) || isMechanicCustomer(data) || isMechanicCustomer(routeItem)
+  const mechanicCategory = customerData?.mechanic_category || data?.mechanic_category || routeItem?.mechanic_category || null
+  const formatNumber = (value: any) => Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+  const formatDate = (value: any) => {
+    const date = value ? new Date(value) : null
+    return date && !isNaN(date.getTime())
+      ? date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      : ''
+  }
+  // getCustomerInfo order / visit figures; shown only when the API sends them
+  const activityInfo = [
+    { label: 'Total Order Value', value: customerData?.total_order_value != null ? `₹ ${formatNumber(customerData.total_order_value)}` : '' },
+    { label: 'Last Order', value: formatDate(customerData?.last_order_date) },
+    { label: 'Last Visit', value: formatDate(customerData?.last_visited) },
+    { label: 'Total Points', value: !isMechanic && customerData?.total_points != null ? formatNumber(customerData.total_points) : '' },
+  ].filter(info => !!info.value)
+
+  const handleCall = () => {
+    const phone = normalizeIndianMobileNumber(customerData?.mobile)
+    if (!phone || phone.length < 10) {
+      Alert.alert('Invalid Number', 'No valid phone number available.')
+      return
+    }
+    Linking.openURL(`tel:${phone}`).catch(() => Alert.alert('Error', 'Unable to open dialer'))
+  }
+
+  const handleWhatsApp = () => {
+    const phone = normalizeIndianMobileNumber(customerData?.mobile)
+    if (!phone || phone.length < 10) {
+      Alert.alert('Invalid Number', 'No valid phone or WhatsApp number available.')
+      return
+    }
+    Linking.openURL(`whatsapp://send?phone=91${phone}`).catch(() =>
+      Alert.alert('WhatsApp Not Installed', 'WhatsApp is required to send a message.'),
+    )
+  }
+
+  const handleEmail = () => {
+    if (!customerData?.email) {
+      Alert.alert('No Email', 'Email id is not available for this customer.')
+      return
+    }
+    Linking.openURL(`mailto:${customerData.email}`).catch(() =>
+      Alert.alert('No email app found', 'Please set up an email client'),
+    )
+  }
+
   const handleLocation = async () => {
     const gps = customerData?.gps_location?.trim();
-    const addr = customerData?.address_line?.trim();
+    const addr = (customerData?.address_line || customerData?.billing_address)?.trim();
 
     let query = '';
 
@@ -416,36 +503,80 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
 
         {activeTab == 1 && (
           <View style={styles.activeInnerContainer}>
-            <View style={styles.imageView}>
-              <Pressable onPress={() => {
-                openImageViewer(customerPrimaryImage)
-
-              }}>
+            <View style={styles.dashCard}>
+              <Pressable
+                disabled={!customerPrimaryImage}
+                onPress={() => openImageViewer(customerPrimaryImage)}
+              >
                 <MediaImage
                   path={customerPrimaryImage}
-                  placeholder={require('../../assets/images/Dummy/Customer2.png')}
                   style={styles.firstImage}
+                  resizeMode="cover"
                 />
               </Pressable>
 
               <View style={styles.textHeading}>
-                <AppText color="black" size={16} family="InterMedium">
+                <AppText color="black" size={18} family="InterSemiBold" style={{ textTransform: 'capitalize' }}>
                   {customerData?.legal_name || '-'}
                 </AppText>
-                <AppText color="black" size={14} family="InterRegular" opacity={0.6}>
-                  {customerData?.billing_address
-                    ? `${customerData.billing_address}, ${(customerData.billing_city ? customerData.billing_city?.city_name : '' )|| ''}`
-                    : 'Address not available'}
-                </AppText>
+                {!!customerAddress && (
+                  <View style={[styles.row, { gap: 6, alignItems: 'flex-start' }]}>
+                    <View style={{ marginTop: 1 }}>
+                      <LocationIcon color={colors.gray} width={16} height={16} />
+                    </View>
+                    <AppText color="black" size={13} family="InterRegular" opacity={0.6} style={{ flex: 1 }}>
+                      {customerAddress}
+                    </AppText>
+                  </View>
+                )}
+              </View>
+
+              {(!!customerData?.registration_type || !!customerStatus || isMechanic) && (
+                <View style={[styles.row, styles.chipRow]}>
+                  {isMechanic && <MechanicCategoryBadge category={mechanicCategory?.category} />}
+                  {!!customerData?.registration_type && (
+                    <View style={[styles.chip, { backgroundColor: colors.goldSoft }]}>
+                      <AppText size={12} color={colors.blue} family="InterSemiBold">
+                        {customerData.registration_type}
+                      </AppText>
+                    </View>
+                  )}
+                  {!!customerStatus && (
+                    <View style={[styles.chip, { backgroundColor: statusColor + '1A' }]}>
+                      <AppText size={12} color={statusColor} family="InterSemiBold" style={{ textTransform: 'capitalize' }}>
+                        {customerStatus.toLowerCase()}
+                      </AppText>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.divider} />
+
+              <View style={[styles.row, styles.quickActions]}>
+                {[
+                  { key: 'call', label: 'Call', icon: <PhoneICon />, onPress: handleCall },
+                  { key: 'whatsapp', label: 'WhatsApp', icon: <WhatsappICon />, onPress: handleWhatsApp },
+                  { key: 'email', label: 'Email', icon: <EmailIcon />, onPress: handleEmail },
+                  { key: 'map', label: 'Location', icon: <LocationIcon />, onPress: handleLocation },
+                ].map(action => (
+                  <Pressable key={action.key} style={styles.quickAction} onPress={action.onPress}>
+                    <View style={styles.quickActionIcon}>{action.icon}</View>
+                    <AppText size={12} color="#2B2B2B" family="InterMedium">
+                      {action.label}
+                    </AppText>
+                  </Pressable>
+                ))}
               </View>
             </View>
+
             {
               customerData && (
                 <Pressable
                   style={[
-                    styles.button,
-                    { alignSelf: 'flex-start', marginTop: 15, gap: 6 },
+                    styles.checkInButton,
                     styles.row,
+                    { backgroundColor: checkInHanlde ? '#D64545' : colors.blue },
                     (checkInLoading) ? { opacity: 0.7 } : null,
                   ]}
                   onPress={() => {
@@ -469,7 +600,7 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                   disabled={checkInLoading || loader}
                 >
                   <CheckIcon color="white" />
-                  <AppText size={12} color="#FDFDFD" family="InterSemiBold">
+                  <AppText size={15} color="#FDFDFD" family="InterSemiBold">
                     {checkInLoading
                       ? 'Processing...'
                       : checkInHanlde
@@ -479,111 +610,107 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                 </Pressable>
               )
             }
-
-
-            {/* <View style={[styles.row, styles.filter]}>
-              <AppText color="#1E1E1E" family="InterRegular" size={14}>
-                AUG 2024 - AUG 2025
+            {checkInHanlde && !!lastCheckinText && (
+              <AppText size={12} color="black" family="InterRegular" opacity={0.6} align="center" style={{ marginTop: 8 }}>
+                Checked in since {lastCheckinText}
               </AppText>
-              <Pressable style={styles.calender}>
-                <CalenderIcon />
-              </Pressable>
-            </View> */}
+            )}
 
-            {/* <View style={styles.orderInformation}>
+            {/* Who checked in / out at this customer and when */}
+            <Pressable style={[styles.visitHistoryButton, styles.row]} onPress={() => setVisitHistoryVisible(true)}>
+              <CalenderIcon />
+              <AppText size={15} color={colors.blue} family="InterSemiBold">
+                Visit History
+              </AppText>
+            </Pressable>
+            <CustomerVisitHistory
+              visible={visitHistoryVisible}
+              customerId={routeItem?.customer_id || routeItem?.id}
+              customerName={customerData?.legal_name}
+              onClose={() => setVisitHistoryVisible(false)}
+            />
+
+            {isMechanic && (
+              <View style={[styles.dashCard, { marginTop: 16 }]}>
+                <View style={[styles.row, styles.headerRow]}>
+                  <AppText size={16} color="black" family="InterSemiBold">
+                    Mechanic Category
+                  </AppText>
+                  <MechanicCategoryBadge category={mechanicCategory?.category} />
+                </View>
+                {mechanicCategory ? (
+                  <>
+                    <View style={[styles.categoryBanner, { backgroundColor: mechanicCategoryColour(mechanicCategory.category) + '14' }]}>
+                      <AppText size={22} color={mechanicCategoryColour(mechanicCategory.category)} family="InterBold">
+                        {mechanicCategory.category}
+                      </AppText>
+                      <AppText size={12} color="#5C5C5C" family="InterMedium">
+                        {mechanicCategory.level_code} · {mechanicCategory.period}
+                      </AppText>
+                    </View>
+                    <View style={styles.infoGrid}>
+                      {[
+                        { label: 'Points (12 months)', value: formatNumber(mechanicCategory.points) },
+                        { label: 'Coupon Scans', value: formatNumber(mechanicCategory.scans) },
+                        { label: 'Months Scanned', value: `${mechanicCategory.active_months ?? 0} of 12` },
+                        { label: 'Quarters Active', value: `${mechanicCategory.active_quarters ?? 0} of 4` },
+                      ].map(info => (
+                        <View key={info.label} style={styles.infoTile}>
+                          <AppText size={12} color="#5C5C5C" family="InterMedium">
+                            {info.label}
+                          </AppText>
+                          <AppText size={14} color="black" family="InterSemiBold" style={{ marginTop: 4 }}>
+                            {info.value}
+                          </AppText>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <AppText size={13} color="black" family="InterRegular" opacity={0.6} style={{ marginTop: 10 }}>
+                    No Gajra Gro coupon scan in the last 12 months, so this mechanic has no category yet.
+                  </AppText>
+                )}
+              </View>
+            )}
+
+            {activityInfo.length > 0 && (
+              <View style={[styles.dashCard, { marginTop: 16 }]}>
+                <AppText size={16} color="black" family="InterSemiBold">
+                  Orders & Visits
+                </AppText>
+                <View style={styles.infoGrid}>
+                  {activityInfo.map(info => (
+                    <View key={info.label} style={styles.infoTile}>
+                      <AppText size={12} color="#5C5C5C" family="InterMedium">
+                        {info.label}
+                      </AppText>
+                      <AppText size={14} color="black" family="InterSemiBold" style={{ marginTop: 4 }}>
+                        {info.value}
+                      </AppText>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={[styles.dashCard, { marginTop: 16 }]}>
               <AppText size={16} color="black" family="InterSemiBold">
-                Orders Information
+                Overview
               </AppText>
-              <View style={[styles.row, styles.rowView]}>
-                <View style={[styles.row, { gap: 13, alignItems: 'flex-start', marginTop: 18 }]}>
-                  <View style={{ marginTop: 7 }}>
-                    <BuyOrderIcon />
-                  </View>
-                  <View style={{ gap: 6 }}>
-                    <AppText size={14} color="#5C5C5C" opacity={0.8} family="InterMedium">
-                      Total Order Value
+              <View style={styles.infoGrid}>
+                {dashboardInfo.map(info => (
+                  <View key={info.label} style={styles.infoTile}>
+                    <AppText size={12} color="#5C5C5C" family="InterMedium">
+                      {info.label}
                     </AppText>
-                    <AppText size={14} color="#000" family="InterBold">
-                      API doesn't have → keep placeholder or use avg_monthly_purchase × 12 etc
-                      20,000.00
+                    <AppText size={14} color="black" family="InterSemiBold" numLines={2} style={{ marginTop: 4 }}>
+                      {info.value || '-'}
                     </AppText>
                   </View>
-                </View>
-
-                <View style={[styles.row, { gap: 13, alignItems: 'flex-start', marginTop: 18 }]}>
-                  <View style={{ marginTop: 7 }}>
-                    <OrderBoxIcon />
-                  </View>
-                  <View style={{ gap: 6 }}>
-                    <AppText size={14} color="#5C5C5C" opacity={0.8} family="InterMedium">
-                      Total Order Qty
-                    </AppText>
-                    <AppText size={14} color="#000" family="InterBold">
-                      40,000.00
-                    </AppText>
-                  </View>
-                </View>
+                ))}
               </View>
-
-              <View style={[styles.row, styles.rowView]}>
-                <View style={[styles.row, { gap: 13, alignItems: 'flex-start', marginTop: 18 }]}>
-                  <View style={{ marginTop: 7 }}>
-                    <CalenderAddIcon />
-                  </View>
-                  <View style={{ gap: 6 }}>
-                    <AppText size={14} color="#5C5C5C" opacity={0.8} family="InterMedium">
-                      Last Visit Date
-                    </AppText>
-                    <AppText size={14} color="#000" family="InterBold">
-                      {customerData?.check_status?.last_checkin?.checkin_datetime
-                        ? new Date(customerData.check_status.last_checkin.checkin_datetime).toLocaleDateString()
-                        : '-'}
-                    </AppText>
-                  </View>
-                </View>
-
-                <View style={[styles.row, { gap: 13, alignItems: 'flex-start', marginTop: 18 }]}>
-                  <View style={{ marginTop: 7 }}>
-                    <OrderHistoryIcon />
-                  </View>
-                  <View style={{ gap: 6 }}>
-                    <AppText size={14} color="#5C5C5C" opacity={0.8} family="InterMedium">
-                      Last Order Date
-                    </AppText>
-                    <AppText size={14} color="#000" family="InterBold">
-                      06AUG2025 
-                    </AppText>
-                  </View>
-                </View>
-              </View>
-            </View> */}
-
-            {/* <View style={[styles.row, styles.gapView]}>
-              <Pressable
-                style={[styles.activityButton, styles.center, { backgroundColor: colors.blue }]}
-                onPress={() => navigation.navigate('TourPlanPage')}
-              >
-                <FastImage
-                  source={require('../../assets/images/DetailsIcon/Activity.png')}
-                  style={{ height: 29, width: 29 }}
-                  resizeMode="contain"
-                />
-                <AppText size={14} color="white" family="InterMedium">
-                  Activity
-                </AppText>
-              </Pressable>
-
-              <View style={[styles.activityButton, styles.center, { backgroundColor: 'rgba(242, 183, 5, 0.07)' }]}>
-                <FastImage
-                  source={require('../../assets/images/DetailsIcon/MenTImers.png')}
-                  style={{ height: 29, width: 29 }}
-                  resizeMode="contain"
-                />
-                <AppText size={14} color="black" opacity={0.8} family="InterMedium">
-                  Order History
-                </AppText>
-              </View>
-            </View> */}
+            </View>
 
             <View style={{ height: 40 }} />
           </View>
@@ -717,7 +844,6 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                     <MediaImage
                       style={styles.attImg}
                       path={customerData?.shop_image}
-                      placeholder={require('../../assets/images/Dummy/Customer2.png')}
                     />
                     <AppText align="center" size={14} color="black" family="InterBold">
                       Outlet Image
@@ -730,17 +856,14 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                         <MediaImage
                           style={styles.attImg}
                           path={customerData?.owner_photo}
-                          placeholder={require('../../assets/images/Dummy/Customer2.png')}
                         />
                         : (
                           <>
                             {
                               documents && Array.isArray(documents) && (
-                                <FastImage
+                                <MediaImage
                                   style={styles.attImg}
-                                  source={documents[0]
-                                    ? { uri: resolveMediaUrl(documents[0]) }
-                                    : require('../../assets/images/Dummy/Customer2.png')}
+                                  path={documents[0]}
                                 />
                               )
                             }
@@ -1120,7 +1243,6 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                     <MediaImage
                       style={{ height: 140, width: '100%', borderRadius: 12 }}
                       path={attachment.value}
-                      placeholder={require('../../assets/images/Dummy/Customer2.png')}
                       resizeMode="cover"
                     />
                     <AppText align="center" size={13} color="black" family="InterBold" style={{ marginTop: 6 }}>

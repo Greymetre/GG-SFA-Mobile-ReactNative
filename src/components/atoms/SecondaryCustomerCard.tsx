@@ -24,6 +24,7 @@ import AppText from '../AppText/AppText';
 import { rw } from '../../utils/responsive';
 import { SCREEN_WIDTH } from '../../utils/misc';
 import MediaImage from './MediaImage';
+import MechanicCategoryBadge, { isMechanicCustomer } from './MechanicCategoryBadge';
 import FastImage from 'react-native-fast-image';
 import { useGetSubmitCheckIN } from '../../api/query/CustomerApi';
 import Toast from 'react-native-toast-message';
@@ -383,7 +384,6 @@ const SecondaryCustomerCard: React.FC<SolarCardProps> = ({
         !type && (
           <MediaImage
             path={customerImage}
-            placeholder={require('../../assets/images/Dummy/Customer2.png')}
             style={styles.mainImage}
             resizeMode="cover"
           />
@@ -414,6 +414,9 @@ const SecondaryCustomerCard: React.FC<SolarCardProps> = ({
         <Text style={styles.address} numberOfLines={2}>
           {customerAddress}
         </Text>
+        {isMechanicCustomer(item) && (
+          <MechanicCategoryBadge category={item?.mechanic_category?.category} style={{ marginTop: 8 }} />
+        )}
       </View>
 
       {

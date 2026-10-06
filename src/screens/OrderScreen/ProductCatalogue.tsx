@@ -5,7 +5,7 @@ import { ArrowDownIcon } from '../../assets/svgs/SvgsFile';
 import AppText from '../../components/AppText/AppText';
 import { styles } from './styles';
 import { rw } from '../../utils/responsive';
-import FastImage from 'react-native-fast-image';
+import MediaImage from '../../components/atoms/MediaImage';
 import { AddCartMiunsIcon, PlaceOrderIcon, PlusIcon } from '../../assets/svgs/HomePageSvgs';
 import { colors } from '../../utils/Colors';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -26,6 +26,7 @@ interface CartItem {
     productName: string;
     quantity: number;
     price: number;
+    ggNo?: string; // product_no, shown under the product on Submit Order
 }
 
 interface DropdownItem {
@@ -44,7 +45,6 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [loadingFamily, setLoadingFamily] = useState<boolean>(true);
     const [productDetails, setProductDetails] = useState<any | null>(null);
-    const [productImageError, setProductImageError] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [isEditingQty, setIsEditingQty] = useState(false);
     const [tempQuantity, setTempQuantity] = useState<string>('');
@@ -248,7 +248,6 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
             const json = await res.json();
 
             setProductDetails(json?.data || null);
-            setProductImageError(false);
         } catch (error) {
             console.log('Product details error', error);
         }
@@ -306,6 +305,7 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                     ...updatedCart[existingIndex],
                     quantity: quantity,
                     price: itemPrice,           // ← keep consistent price
+                    ggNo: productDetails?.product_no || '',
                 };
 
                 Toast.show({
@@ -323,6 +323,7 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                 productName: selectedProduct.label,
                 quantity: quantity,
                 price: itemPrice,
+                ggNo: productDetails?.product_no || '',
             };
 
             Toast.show({
@@ -486,15 +487,11 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                     productDetails && (
                         <View style={styles.quantitySection}>
                             <View style={styles.productContainer}>
-                                <FastImage
+                                {/* tries S3 then server storage; "No Image" box when there is none */}
+                                <MediaImage
                                     style={styles.productImage}
-                                    source={
-                                        productDetails?.product_image && !productImageError
-                                            ? { uri: productDetails.product_image }
-                                            : require('../../assets/images/Dummy/order2.png')
-                                    }
+                                    path={productDetails?.product_image}
                                     resizeMode='cover'
-                                    onError={() => setProductImageError(true)}
                                 />
                             </View>
                             <View style={[styles.tableContainer, { alignSelf: 'center' }]}>
@@ -527,10 +524,10 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                                 }]}>
                                     <View style={{ width: '48%' }}>
                                         <AppText size={14} color='black' family='InterSemiBold' opacity={0.8}>
-                                            Code
+                                            GG No
                                         </AppText>
                                         <AppText size={13} color="black" family='InterRegular' opacity={0.8}>
-                                            {productDetails?.product_code}
+                                            {productDetails?.product_no || productDetails?.product_code || '-'}
                                         </AppText>
                                     </View>
                                     <View style={{ width: '48%', alignItems: 'center' }}>

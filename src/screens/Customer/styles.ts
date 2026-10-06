@@ -48,8 +48,87 @@ export const styles = StyleSheet.create({
     },
     firstImage: {
         width: '100%',
-        height: 221,
-        marginBottom: 10
+        height: 200,
+        borderRadius: 10,
+        marginBottom: 14
+    },
+    dashCard: {
+        padding: 12,
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        shadowOffset: { width: 0, height: 3 },
+        shadowColor: 'rgba(0,0,0,0.12)',
+        shadowOpacity: 0.6,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    chipRow: {
+        gap: 8,
+        marginTop: 12,
+        flexWrap: 'wrap',
+    },
+    chip: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#EFEAE0',
+        marginVertical: 14,
+    },
+    quickActions: {
+        justifyContent: 'space-around',
+    },
+    quickAction: {
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 64,
+    },
+    quickActionIcon: {
+        height: 44,
+        width: 44,
+        borderRadius: 22,
+        backgroundColor: colors.blue,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    visitHistoryButton: {
+        height: 46,
+        marginTop: 10,
+        borderRadius: 40,
+        justifyContent: 'center',
+        gap: 8,
+        borderWidth: 1.5,
+        borderColor: colors.blue,
+        backgroundColor: colors.white,
+    },
+    checkInButton: {
+        height: 50,
+        marginTop: 16,
+        borderRadius: 40,
+        justifyContent: 'center',
+        gap: 8,
+    },
+    infoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginTop: 12,
+        rowGap: 10,
+    },
+    categoryBanner: {
+        marginTop: 12,
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        gap: 4,
+    },
+    infoTile: {
+        width: '48.5%',
+        padding: 12,
+        borderRadius: 10,
+        backgroundColor: colors.offWHite,
     },
     textHeading: {
         gap: 6

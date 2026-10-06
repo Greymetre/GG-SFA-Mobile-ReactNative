@@ -174,6 +174,14 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
   const [isRetailerCustomer, setIsRetailerCustomer] = useState(
     resolvedCustomerType.includes('retailer'),
   );
+  // Mechanic: Ustad / Non Ustad tag in place of the grade, and an optional parent of any other customer type
+  const [isMechanicCustomer, setIsMechanicCustomer] = useState(
+    resolvedCustomerType.includes('mechanic'),
+  );
+  const USTAD_OPTIONS = [
+    { label: 'Ustad', value: 'Ustad' },
+    { label: 'Non Ustad', value: 'Non Ustad' },
+  ];
 
   const [gradeOptions, setGradeOptions] = useState<{ label: string; value: string }[]>([]);
   useEffect(() => {
@@ -187,6 +195,7 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
     sub_type: '',
     owner_name: '',
     grade: '',
+    ustad_tag: '',
     email: '',
     shop_name: '',
     mobile_numbers: [] as string[],
@@ -301,24 +310,33 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
         (customerTypeId != null && retailerTypeId != null &&
           String(customerTypeId) === String(retailerTypeId));
 
+      const currentType = customerTypes.find((item: any) =>
+        customerTypeId != null && String(getCustomerTypeId(item)) === String(customerTypeId));
+      const currentTypeIsMechanic =
+        resolvedCustomerType.includes('mechanic') ||
+        getCustomerTypeLabel(currentType).toLowerCase().includes('mechanic');
+
       setIsRetailerCustomer(currentTypeIsRetailer);
-      if (!currentTypeIsRetailer) {
+      setIsMechanicCustomer(currentTypeIsMechanic);
+      if (!currentTypeIsRetailer && !currentTypeIsMechanic) {
         setParentCustomers([]);
         return;
       }
 
+      // Retailer: dealers / distributors; Mechanic: every customer type except mechanic
       const parentTypes = customerTypes.filter((item: any) => {
         const label = getCustomerTypeLabel(item).toLowerCase().trim();
-        const isDealerOrDistributor = label.includes('dealer') || label.includes('distributor');
         const isOldCustomerModel = label.includes('master') || label.includes('secondary');
-        return isDealerOrDistributor && !isOldCustomerModel;
+        if (!label || isOldCustomerModel) return false;
+        if (currentTypeIsMechanic) return !label.includes('mechanic');
+        return label.includes('dealer') || label.includes('distributor');
       });
 
       const responses = await Promise.all(
         parentTypes.map((parentType: any) => getCustomerTypeList({
           customer_type_id: getCustomerTypeId(parentType),
           page: 1,
-          pageSize: 100,
+          pageSize: currentTypeIsMechanic ? 500 : 100,
         })),
       );
 
@@ -339,8 +357,17 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
         }).filter(Boolean),
       );
 
+      // Edit: keep the saved parent selectable even when it is not in the user's customer list
+      const savedParent = existingCustomer?.parent_customer;
+      if (savedParent?.id && !seen.has(String(savedParent.id))) {
+        combinedParentCustomers.unshift({
+          label: [savedParent.customer_type, savedParent.customer_code, savedParent.name].filter(Boolean).join(' - '),
+          value: String(savedParent.id),
+        });
+      }
+
       setParentCustomers(combinedParentCustomers);
-      if (!parentTypes.length) {
+      if (!parentTypes.length && currentTypeIsRetailer) {
         Toast.show({
           type: 'error',
           text1: 'Dealer or Distributor customer type not found',
@@ -758,7 +785,12 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
     appendIfPresent('last_name', lastNameParts.join(' '));
     appendIfPresent('name', formData.shop_name);
     appendIfPresent('email', formData.email?.trim());
-    appendIfPresent('grade', formData.grade);
+    if (isMechanicCustomer) {
+      // always sent so clearing it on edit is saved too
+      fd.append('ustad_tag', formData.ustad_tag || '');
+    } else {
+      appendIfPresent('grade', formData.grade);
+    }
     appendIfPresent('customertype', customerTypeId);
     appendIfPresent('firmtype', formData.sub_type);
     appendIfPresent('contact_number', mobileNumbers[1] || mobileNumbers[0]);
@@ -770,6 +802,7 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
     appendIfPresent('pincode_id', formData.pincode_id);
     appendIfPresent('zipcode', pinCode);
     if (isRetailerCustomer) appendIfPresent('parent_id', parentIds);
+    if (isMechanicCustomer) fd.append('parent_id', formData.parent_customer_ids?.[0] || '');
     appendIfPresent('beat_id', formData.beat_id);
     appendIfPresent('locality', formData.belt_area_market_name);
     appendIfPresent('latitude', useCurrentLocation ? coords?.latitude : existingCustomer?.latitude);
@@ -894,6 +927,7 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
         sub_type: existingCustomer.sub_type || existingCustomer.firmtype || details.firmtype || '',
         owner_name: existingCustomer.owner_name || existingCustomer.full_name || details.contact_person || '',
         grade: existingCustomer.grade || details.grade || '',
+        ustad_tag: existingCustomer.ustad_tag || '',
         email: existingCustomer.email || '',
         shop_name: existingCustomer.shop_name || existingCustomer.name || existingCustomer.legal_name || '',
         mobile_numbers: mobiles,
@@ -1019,17 +1053,31 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
                 onChangeText={(v: string) => handleChange('owner_name', v)}
               />
 
-              <Dropdown
-                style={[styles.selectUser, { padding: 14, marginBottom: 12 }]}
-                data={gradeOptions}
-                value={formData.grade}
-                onChange={(item) => handleChange('grade', item.value)}
-                labelField="label"
-                valueField="value"
-                placeholder={`${customerTypeName || 'Customer'} Grade (optional)`}
-                placeholderStyle={{ color: 'gray', fontFamily: fonts.InterRegular, fontSize: 14 }}
-                renderRightIcon={() => <ArrowDownIcon />}
-              />
+              {isMechanicCustomer ? (
+                <Dropdown
+                  style={[styles.selectUser, { padding: 14, marginBottom: 12 }]}
+                  data={USTAD_OPTIONS}
+                  value={formData.ustad_tag}
+                  onChange={(item) => handleChange('ustad_tag', item.value)}
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Ustad / Non Ustad (optional)"
+                  placeholderStyle={{ color: 'gray', fontFamily: fonts.InterRegular, fontSize: 14 }}
+                  renderRightIcon={() => <ArrowDownIcon />}
+                />
+              ) : (
+                <Dropdown
+                  style={[styles.selectUser, { padding: 14, marginBottom: 12 }]}
+                  data={gradeOptions}
+                  value={formData.grade}
+                  onChange={(item) => handleChange('grade', item.value)}
+                  labelField="label"
+                  valueField="value"
+                  placeholder={`${customerTypeName || 'Customer'} Grade (optional)`}
+                  placeholderStyle={{ color: 'gray', fontFamily: fonts.InterRegular, fontSize: 14 }}
+                  renderRightIcon={() => <ArrowDownIcon />}
+                />
+              )}
 
               <CustomTextInput
                 placeholder="Email (optional)"
@@ -1198,6 +1246,25 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
                 />
               )}
 
+              {isMechanicCustomer && (
+                <Dropdown
+                  style={[styles.selectUser, { padding: 14, marginTop: 12 }]}
+                  data={parentCustomers}
+                  value={formData.parent_customer_ids?.[0] || null}
+                  onChange={(item) => handleChange('parent_customer_ids', item?.value ? [String(item.value)] : [])}
+                  labelField="label"
+                  valueField="value"
+                  placeholder={parentCustomersLoading ? 'Loading Parent Customers...' : 'Select Parent Customer (optional)'}
+                  placeholderStyle={{ color: 'gray', fontFamily: fonts.InterRegular, fontSize: 14 }}
+                  inputSearchStyle={{ height: 40, fontSize: 14 }}
+                  search
+                  searchPlaceholder="Search customer..."
+                  maxHeight={300}
+                  disable={parentCustomersLoading}
+                  renderRightIcon={() => parentCustomersLoading ? <ActivityIndicator size="small" /> : <ArrowDownIcon />}
+                />
+              )}
+
               <Dropdown
                 style={[styles.selectUser, { padding: 14, marginTop: 12 }]}
                 data={beats}
@@ -1207,6 +1274,10 @@ const AddSecondaryCustomer = ({ navigation, route }: any) => {
                 valueField="value"
                 placeholder="Select Beat (optional)"
                 placeholderStyle={{ color: 'gray', fontFamily: fonts.InterRegular, fontSize: 14 }}
+                inputSearchStyle={{ height: 40, fontSize: 14 }}
+                search
+                searchPlaceholder="Search beat..."
+                maxHeight={300}
                 renderRightIcon={() => <ArrowDownIcon />}
               />
 
