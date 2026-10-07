@@ -1,0 +1,5 @@
+
+# Release signing keys
+*.jks
+keystore*.properties
+!keystore.properties.example
