@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import AppText from '../../components/AppText/AppText';
 import { colors } from '../../utils/Colors';
 import ReportTab from './ReportTab';
 import SchemeTab from './SchemeTab';
 import RedemptionTab from './RedemptionTab';
+import ScanningTab from './ScanningTab';
+import TrendsTab from './TrendsTab';
 
 const TABS = [
   { key: 'scheme', label: 'Scheme' },
+  { key: 'scanning', label: 'Scanning' },
   { key: 'redemption', label: 'Redemption' },
   { key: 'report', label: 'Milestone' },
+  { key: 'trends', label: 'Trends' },
 ] as const;
 
 type TabKey = typeof TABS[number]['key'];
 
-// Gajra Gro+ screen: Scheme / Redemption / Milestone (the team's Gro mechanics, report tab)
+// Gajra Gro+ screen: Scheme / Scanning / Redemption / Milestone / Trends (the team's Gro mechanics, report tab)
 const GajraGro = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('scheme');
   // A tab is mounted on first open and kept, so switching back does not reload it
@@ -28,30 +32,39 @@ const GajraGro = () => {
   return (
     <View style={styles.screen}>
       <View style={styles.tabBar}>
-        {TABS.map(tab => {
-          const selected = activeTab === tab.key;
-          return (
-            <Pressable key={tab.key} style={[styles.tab, selected && styles.activeTab]} onPress={() => openTab(tab.key)}>
-              <AppText
-                size={14}
-                family={selected ? 'InterSemiBold' : 'InterMedium'}
-                color={selected ? colors.white : '#2B2B2B'}
-              >
-                {tab.label}
-              </AppText>
-            </Pressable>
-          );
-        })}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+          {TABS.map(tab => {
+            const selected = activeTab === tab.key;
+            return (
+              <Pressable key={tab.key} style={[styles.tab, selected && styles.activeTab]} onPress={() => openTab(tab.key)}>
+                <AppText
+                  size={13}
+                  numLines={1}
+                  family={selected ? 'InterSemiBold' : 'InterMedium'}
+                  color={selected ? colors.white : '#2B2B2B'}
+                >
+                  {tab.label}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {opened.includes('scheme') && (
         <View style={[styles.page, activeTab !== 'scheme' && styles.hidden]}><SchemeTab /></View>
+      )}
+      {opened.includes('scanning') && (
+        <View style={[styles.page, activeTab !== 'scanning' && styles.hidden]}><ScanningTab /></View>
       )}
       {opened.includes('redemption') && (
         <View style={[styles.page, activeTab !== 'redemption' && styles.hidden]}><RedemptionTab /></View>
       )}
       {opened.includes('report') && (
         <View style={[styles.page, activeTab !== 'report' && styles.hidden]}><ReportTab /></View>
+      )}
+      {opened.includes('trends') && (
+        <View style={[styles.page, activeTab !== 'trends' && styles.hidden]}><TrendsTab /></View>
       )}
     </View>
   );
@@ -73,7 +86,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  tab: { flex: 1, height: 40, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  tabRow: { flexGrow: 1 },
+  tab: { flexGrow: 1, height: 40, paddingHorizontal: 16, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   activeTab: { backgroundColor: colors.blue },
   page: { flex: 1 },
   hidden: { display: 'none' },

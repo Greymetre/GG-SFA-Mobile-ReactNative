@@ -79,5 +79,7 @@ export const API_ENDPOINT = {
   GAJRA_GRO: "api/gajra-gro",
   GAJRA_GRO_SCHEMES: "api/gajra-gro/schemes",
   GAJRA_GRO_REDEMPTIONS: "api/gajra-gro/redemptions",
+  GAJRA_GRO_SCANS: "api/gajra-gro/scans",
+  GAJRA_GRO_TRENDS: "api/gajra-gro/trends",
 
 };

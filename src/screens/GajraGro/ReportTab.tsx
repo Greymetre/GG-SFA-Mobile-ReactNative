@@ -81,16 +81,22 @@ const MechanicCard = ({ row, months }: { row: GroMechanic; months: string[] }) =
   );
 };
 
-// Logged-in user's mechanic target vs achievement, overall and per category
+const TARGET_TITLES = { all: 'All Users Mechanic Target', team: 'Team Mechanic Target', self: 'My Mechanic Target' };
+
+// Mechanic target vs achievement of the users in scope (all / team / self), overall and per category
 const TargetCard = ({ target }: { target: GroTarget }) => {
   const percent = target.percent ?? 0;
+  const scope = target.scope || 'self';
+  const who = scope === 'self' ? 'Your' : scope === 'all' ? 'All users\'' : 'Your team\'s';
   const barColor = percent >= 100 ? '#1E9E4A' : percent >= 50 ? '#C9960C' : '#D64545';
   return (
     <View style={[styles.targetCard, shadowStyle]}>
       <View style={styles.targetHead}>
         <View style={{ flex: 1 }}>
-          <AppText size={15} family="InterBold" color="#202432">My Mechanic Target</AppText>
-          <AppText size={11} family="InterMedium" color="#9094A3">{target.financial_year} · categories on {target.period}</AppText>
+          <AppText size={15} family="InterBold" color="#202432">{TARGET_TITLES[scope]}</AppText>
+          <AppText size={11} family="InterMedium" color="#9094A3">
+            {target.financial_year}{scope !== 'self' && target.users ? ` · ${target.users} users` : ''} · categories on {target.period}
+          </AppText>
         </View>
         {target.has_target && (
           <AppText size={20} family="InterBold" color={barColor}>{percent}%</AppText>
@@ -110,7 +116,7 @@ const TargetCard = ({ target }: { target: GroTarget }) => {
         </>
       ) : (
         <AppText size={12} family="InterMedium" color="#9094A3" style={{ marginTop: 8 }}>
-          No target assigned for {target.financial_year}. Your achievement so far: {target.achieved} mechanics.
+          No target assigned for {target.financial_year}. {who} achievement so far: {target.achieved} mechanics.
         </AppText>
       )}
 
