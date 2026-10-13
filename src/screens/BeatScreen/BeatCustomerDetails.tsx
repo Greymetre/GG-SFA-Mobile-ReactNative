@@ -9,6 +9,7 @@ import { SearchSvgIcon } from '../../assets/svgs/HomePageSvgs';
 import CustomerCard from '../../components/atoms/CustomerCard';
 import { useMutateCustomerListApi, useMutateSecondaryCustListApi } from '../../api/query/CustomerApi';
 import Geolocation from '@react-native-community/geolocation';
+import { requestForegroundLocationPermission } from '../../services/locationPermission';
 import Toast from 'react-native-toast-message';
 import store from '../../components/redux/Store';
 import axios from 'axios';
@@ -141,7 +142,11 @@ const BeatCustomerDetails = ({ route }: any) => {
 
 
     // ── Fetch current location once ─────────────────────────────
-    const getCurrentLocation = () => {
+    const getCurrentLocation = async () => {
+        if (!(await requestForegroundLocationPermission())) {
+            setLocationError('Location permission denied')
+            return
+        }
         Geolocation.getCurrentPosition(
             (position) => {
                 setCurrentLat(position.coords.latitude)

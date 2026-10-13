@@ -14,6 +14,10 @@ import {
 } from '../storage/liveLocationQueue';
 import { formatDateTimeForApi } from '../utils/dateTime';
 import { createMMKV } from 'react-native-mmkv';
+import {
+  requestBackgroundLocationPermission,
+  requestForegroundLocationPermission,
+} from './locationPermission';
 
 const LOCATION_SYNC_INTERVAL_MS = 3 * 60 * 1000;
 const ANDROID_PERMISSION_SETUP_SHOWN_KEY = 'android_live_location_permission_setup_shown_v1';
@@ -55,7 +59,8 @@ const configureGeolocation = () => {
   if (configured) return;
 
   Geolocation.setRNConfiguration({
-    skipPermissionRequests: false,
+    // Android prompts go through locationPermission.ts so the disclosure is shown first
+    skipPermissionRequests: Platform.OS === 'android',
     authorizationLevel: 'always',
     enableBackgroundLocationUpdates: true,
     locationProvider: 'auto',
@@ -63,68 +68,21 @@ const configureGeolocation = () => {
   configured = true;
 };
 
-const showTrackingDisclosure = () =>
-  new Promise<boolean>(resolve => {
-    Alert.alert(
-      'Background location tracking',
-      'FieldKonnect SFA collects location data to enable attendance and field activity tracking even when the app is closed or not in use. Tracking starts after punch-in, is sent securely to your organization, and stops after punch-out.',
-      [
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'Continue', onPress: () => resolve(true) },
-      ],
-      { cancelable: true, onDismiss: () => resolve(false) },
-    );
-  });
-
 const requestAndroidPermission = async () => {
-  const alreadyHasBackgroundLocation =
-    androidApiLevel() < 29 ||
-    (await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-    ));
+  const hasForegroundLocation = await requestForegroundLocationPermission();
+  if (!hasForegroundLocation) return false;
 
-  if (!alreadyHasBackgroundLocation) {
-    const acceptedDisclosure = await showTrackingDisclosure();
-    if (!acceptedDisclosure) return false;
-  }
-
-  const foreground = await PermissionsAndroid.requestMultiple([
-    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-  ]);
-  const hasFine =
-    foreground[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
-    PermissionsAndroid.RESULTS.GRANTED;
-  const hasCoarse =
-    foreground[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
-    PermissionsAndroid.RESULTS.GRANTED;
-  const hasForegroundLocation = hasFine || hasCoarse;
-
-  if (androidApiLevel() >= 29 && hasForegroundLocation) {
-    const hasBackground = await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+  const hasBackground = await requestBackgroundLocationPermission();
+  if (!hasBackground && !backgroundPermissionAlertShown) {
+    backgroundPermissionAlertShown = true;
+    Alert.alert(
+      'Background location required',
+      'For live tracking after punch-in, open app settings and set Location permission to "Allow all the time".',
+      [
+        { text: 'Later', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ],
     );
-
-    if (!hasBackground) {
-      const background = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-      );
-
-      if (
-        background !== PermissionsAndroid.RESULTS.GRANTED &&
-        !backgroundPermissionAlertShown
-      ) {
-        backgroundPermissionAlertShown = true;
-        Alert.alert(
-          'Background location required',
-          'For live tracking after punch-in, open app settings and set Location permission to "Allow all the time".',
-          [
-            { text: 'Later', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ],
-        );
-      }
-    }
   }
 
   if (androidApiLevel() >= 33) {
@@ -133,7 +91,7 @@ const requestAndroidPermission = async () => {
     );
   }
 
-  return hasForegroundLocation;
+  return true;
 };
 
 const showAndroidSettingsGuide = () =>
@@ -352,8 +310,9 @@ export const runAndroidFirstTimeLiveLocationSetup = async () => {
   if (permissionStorage.getBoolean(ANDROID_PERMISSION_SETUP_SHOWN_KEY)) return;
 
   permissionStorage.set(ANDROID_PERMISSION_SETUP_SHOWN_KEY, true);
-  await requestAndroidPermission();
-  await showAndroidSettingsGuide();
+  if (await requestAndroidPermission()) {
+    await showAndroidSettingsGuide();
+  }
 };
 
 export const startLocationTrackingAfterPunchIn = async (userData?: unknown, token?: string) => {

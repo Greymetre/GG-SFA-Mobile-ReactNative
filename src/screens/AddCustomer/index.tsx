@@ -1351,30 +1351,7 @@ const [locationLoading, setLocationLoading] = useState(false);
     }
   }, [useCurrentLocation, coords]);
 
-  // ── Optional: Request location permission on mount (Android mostly) ──
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      if (Platform.OS === 'android') {
-        try {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: "Location Permission",
-              message: "This app needs access to your location to auto-fill coordinates.",
-              buttonNeutral: "Ask Me Later",
-              buttonNegative: "Cancel",
-              buttonPositive: "OK"
-            }
-          );
-          // You can also request ACCESS_BACKGROUND_LOCATION if needed later
-        } catch (err) {
-          console.warn(err);
-        }
-      }
-    };
-
-    requestLocationPermission();
-  }, []);
+  // Location permission (with disclosure) is requested by useLocationHook above.
 
 
   return (

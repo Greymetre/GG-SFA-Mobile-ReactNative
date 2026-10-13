@@ -98,8 +98,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Keep this higher than the previously distributed build so Android can
         // install it as an update instead of rejecting it as a downgrade.
-        versionCode 4
-        versionName "1.4"
+        versionCode 5
+        versionName "1.5"
         buildConfigField "String", "API_BASE_URL", '"https://gajragears.fieldkonnect.io/"'
     }
     packagingOptions {

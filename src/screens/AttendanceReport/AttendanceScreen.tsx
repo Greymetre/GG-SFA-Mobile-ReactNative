@@ -29,7 +29,7 @@ import {
 } from '../../api/query/CustomerApi';
 import Toast from 'react-native-toast-message';
 import { shadowStyle } from '../../utils/typography';
-import { PermissionsAndroid } from 'react-native';
+import { requestForegroundLocationPermission } from '../../services/locationPermission';
 import { SCREEN_HEIGHT } from '../../utils/misc';
 import { Dropdown } from 'react-native-element-dropdown';
 import ActionSheet, { ActionSheetRef, FlatList as ActionSheetFlatList } from 'react-native-actions-sheet';
@@ -164,22 +164,10 @@ const AttendanceScreen: React.FC<{ navigation: any; route: any }> = ({ navigatio
       setLocationLoading(true);
       setLocationError(null);
 
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'App needs location for attendance.',
-            buttonNeutral: 'Ask Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          }
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          setLocationError('Location permission denied');
-          setLocationLoading(false);
-          return;
-        }
+      if (!(await requestForegroundLocationPermission())) {
+        setLocationError('Location permission denied');
+        setLocationLoading(false);
+        return;
       }
 
       Geolocation.getCurrentPosition(

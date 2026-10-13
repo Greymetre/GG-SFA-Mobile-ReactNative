@@ -4,9 +4,8 @@ import Geolocation from "@react-native-community/geolocation";
 import {
   Alert,
   Linking,
-  Platform,
-  PermissionsAndroid,
 } from "react-native";
+import { requestForegroundLocationPermission } from "../../services/locationPermission";
 
 interface Coords {
   latitude: number;
@@ -30,44 +29,15 @@ const useLocationHook = () => {
     };
   }, []);
 
-  const requestLocationPermission = async (): Promise<boolean> => {
-    if (Platform.OS !== "android") return true;
-
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        return true;
-      }
-
-      // Also try coarse if fine is denied (better than nothing)
-      const coarse = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-      );
-      return coarse === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn("Permission error:", err);
-      return false;
-    }
-  };
-
   const requestAndGetLocation = async () => {
     setLoading(true);
     setError(null);
 
-    const hasPermission = await requestLocationPermission();
+    // Shows the in-app location disclosure before the Android prompt
+    const hasPermission = await requestForegroundLocationPermission();
     if (!hasPermission) {
       setLoading(false);
       setError("Location permission denied");
-      Alert.alert(
-        "Permission Required",
-        "This app needs location access to show nearby orders.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() },
-        ]
-      );
       return;
     }
 

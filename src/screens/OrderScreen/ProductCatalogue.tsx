@@ -1,5 +1,5 @@
 import { BASE_URL } from '../../api/AxiosClient';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { ArrowDownIcon } from '../../assets/svgs/SvgsFile';
 import AppText from '../../components/AppText/AppText';
@@ -33,17 +33,22 @@ interface DropdownItem {
     label: string;
     value: number | string;
 }
+
+interface ProductItem extends DropdownItem {
+    ggNo: string;
+    subcategory_id?: number | string;
+    subcategory_name?: string;
+    category_id?: number | string;
+    category_name?: string;
+}
 const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
     const [segmentList, setSegmentList] = useState<DropdownItem[]>([]);
-    const [familyList, setFamilyList] = useState<DropdownItem[]>([]);
-    const [productList, setProductList] = useState<DropdownItem[]>([]);
+    const [allProducts, setAllProducts] = useState<ProductItem[]>([]);
     const [selectedSegmentId, setSelectedSegmentId] = useState<number | string | null>(null);
-    const [selectedFamilyId, setSelectedFamilyId] = useState<number | string | null>(null);
 
     const [products, setProducts] = useState<any[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
     const [loadingProducts, setLoadingProducts] = useState(false);
-    const [loadingFamily, setLoadingFamily] = useState<boolean>(true);
     const [productDetails, setProductDetails] = useState<any | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isEditingQty, setIsEditingQty] = useState(false);
@@ -51,8 +56,32 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
     const [cart, setCart] = useState<CartItem[]>([]);
     const token = store.getState().auth?.token;
 
+    // products of the selected category (all products when no category is picked)
+    const productList = useMemo(
+        () => selectedSegmentId
+            ? allProducts.filter((p) => String(p.category_id) === String(selectedSegmentId))
+            : allProducts,
+        [allProducts, selectedSegmentId]
+    );
+
+    // GG No dropdown: one entry per product that has a GG No, value = product id
+    const ggList = useMemo(
+        () => productList
+            .filter((p) => p.ggNo)
+            .map((p) => ({ label: p.ggNo, value: p.value })),
+        [productList]
+    );
+
+    const selectProduct = (item: ProductItem) => {
+        setSelectedProduct(item);
+        if (item.category_id) {
+            setSelectedSegmentId(item.category_id);
+        }
+        fetchProductDetails(item.value);
+    };
+
     const resetPageState = useCallback(() => {
-        setSelectedFamilyId(null);
+        setSelectedSegmentId(null);
         setSelectedProduct(null);
         setQuantity(1);
         setCart([]);                    // ← clear cart (remove if you want to keep it)
@@ -153,58 +182,14 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
     };
 
     useEffect(() => {
-        // if (!selectedSegmentId) return;
-
-        fetchFamily();
-    }, [selectedSegmentId]);
-
-    const fetchFamily = async () => {
-        setLoadingFamily(true)
-        console.log(selectedSegmentId, 'selectedSegmentId', 'selectedSegmentId')
-        try {
-            const res = await fetch(
-                !selectedSegmentId 
-                ? `${BASE_URL}api/getSubCategoryList`
-                : `${BASE_URL}api/getSubCategoryList?category_id=${selectedSegmentId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            const json = await res.json();
-
-            const familyData = json?.data?.map((item: any) => ({
-                label: item.subcategory_name,
-                value: item.id,
-            }));
-
-            setFamilyList(familyData || []);
-            setLoadingFamily(false)
-        } catch (error) {
-            setLoadingFamily(false)
-            console.log('Family error', error);
-        }
-    };
-
-
-
-
-
-    useEffect(() => {
         fetchProducts();
     }, []);
 
-    const fetchProducts = async (subcategoryId?: number | string) => {
+    const fetchProducts = async () => {
         setLoadingProducts(true);
 
         try {
-            const url = subcategoryId
-                ? `${BASE_URL}api/getProductList?subcategory_id=${subcategoryId}`
-                : `${BASE_URL}api/getProductList`;
-
-            const res = await fetch(url, {
+            const res = await fetch(`${BASE_URL}api/getProductList`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -212,16 +197,17 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
 
             const json = await res.json();
 
-            const productData = json?.data?.map((item: any) => ({
+            const productData: ProductItem[] = json?.data?.map((item: any) => ({
                 label: item.product_name,
                 value: item.id,
+                ggNo: item.product_no || item.product_code || '',
                 subcategory_id: item.subcategory_id,
                 subcategory_name: item.subcategory_name,
                 category_id: item.category_id,
                 category_name: item.category_name,
             }));
 
-            setProductList(productData || []);
+            setAllProducts(productData || []);
         } catch (error) {
             console.log("Product error", error);
         } finally {
@@ -264,9 +250,7 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
             return;
         }
         setSelectedProduct(null);
-        setSelectedFamilyId(null)
         setSelectedSegmentId(null)
-        fetchProducts();
         setProductDetails(null)
         setQuantity(1);
         setIsEditingQty(false);
@@ -293,46 +277,25 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
 
         const itemPrice = Number(productDetails.mrp); // or productDetails.selling_price if you have it
 
-        setCart((prevCart) => {
-            const existingIndex = prevCart.findIndex(
-                (item) => item.productId === selectedProduct.value
-            );
+        const cartItem: CartItem = {
+            productId: selectedProduct.value,
+            productName: selectedProduct.label,
+            quantity: quantity,
+            price: itemPrice,
+            ggNo: productDetails?.product_no || '',
+        };
+        const alreadyInCart = cart.some((item) => item.productId === cartItem.productId);
 
-            if (existingIndex !== -1) {
-                // Update existing item
-                const updatedCart = [...prevCart];
-                updatedCart[existingIndex] = {
-                    ...updatedCart[existingIndex],
-                    quantity: quantity,
-                    price: itemPrice,           // ← keep consistent price
-                    ggNo: productDetails?.product_no || '',
-                };
+        setCart((prevCart) =>
+            prevCart.some((item) => item.productId === cartItem.productId)
+                ? prevCart.map((item) => item.productId === cartItem.productId ? { ...item, ...cartItem } : item)
+                : [...prevCart, cartItem]
+        );
 
-                Toast.show({
-                    type: 'success',
-                    text1: 'Quantity updated',
-                    position: 'top',
-                });
-
-                return updatedCart;
-            }
-
-            // Add new item
-            const newItem: CartItem = {
-                productId: selectedProduct.value,
-                productName: selectedProduct.label,
-                quantity: quantity,
-                price: itemPrice,
-                ggNo: productDetails?.product_no || '',
-            };
-
-            Toast.show({
-                type: 'success',
-                text1: 'Added to cart',
-                position: 'top',
-            });
-
-            return [...prevCart, newItem];
+        Toast.show({
+            type: 'success',
+            text1: alreadyInCart ? 'Quantity updated' : 'Added to cart',
+            position: 'top',
         });
     };
 
@@ -375,14 +338,14 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                 style={[styles.container, { paddingHorizontal: rw(18) }]} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 bottomOffset={50}
-            // contentContainerStyle={{ padding: 16 }}
+                contentContainerStyle={{ paddingBottom: rw(24) }}
 
 
             >
                 {/* <ScrollView style={[styles.container, { paddingHorizontal: rw(18) }]} keyboardDismissMode='on-drag' showsVerticalScrollIndicator={false}> */}
-                <View style={[styles.row, { gap: 10, marginVertical: 20 }]}>
-                    <View style={{ flex: 1, gap: 10 }}>
-                        <AppText size={16} color='black' family='InterBold' opacity={0.8}>Category</AppText>
+                <View style={[styles.row, { gap: 10, marginTop: 12, marginBottom: 10 }]}>
+                    <View style={{ flex: 1, gap: 6 }}>
+                        <AppText size={14} color='black' family='InterBold' opacity={0.8}>Category</AppText>
 
                         <Dropdown
                             style={styles.selectUser}
@@ -400,9 +363,8 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                             value={selectedSegmentId}
                             onChange={(item) => {
                                 setSelectedSegmentId(item.value);
-                                setSelectedFamilyId(null);
-                                setProductList([]);
                                 setSelectedProduct(null);
+                                setProductDetails(null);
                             }}
                             renderRightIcon={() => <ArrowDownIcon />}
                         />
@@ -410,26 +372,25 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
 
                     </View>
                 </View>
-                <View style={[styles.row, { gap: 10, marginBottom: 20 }]}>
-                    <View style={{ flex: 1, gap: 10 }}>
-                        <AppText size={16} color='black' family='InterBold' opacity={0.8}>Subcategory</AppText>
+                <View style={[styles.row, { gap: 10, marginBottom: 10 }]}>
+                    <View style={{ flex: 1, gap: 6 }}>
+                        <AppText size={14} color='black' family='InterBold' opacity={0.8}>GG No</AppText>
                         <Dropdown
                             style={styles.selectUser}
                             placeholderStyle={{ color: '#718096', fontSize: 14 }}
                             selectedTextStyle={{ color: colors.black, fontSize: 14 }}
                             inputSearchStyle={{ height: 40, fontSize: 14 }}
-                            data={familyList}
+                            data={ggList}
                             search
                             maxHeight={300}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select subcategory"
-                            searchPlaceholder="Search subcategory..."
-                            value={selectedFamilyId}
+                            placeholder={loadingProducts ? 'Loading...' : 'Select GG No'}
+                            searchPlaceholder="Search GG No..."
+                            value={selectedProduct?.value ?? null}
                             onChange={(item) => {
-                                setSelectedFamilyId(item.value);
-                                setSelectedProduct(null);
-                                fetchProducts(item.value);
+                                const product = allProducts.find((p) => p.value === item.value);
+                                if (product) selectProduct(product);
                             }}
                             renderRightIcon={() => <ArrowDownIcon />}
                         />
@@ -438,8 +399,8 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                     </View>
                 </View>
 
-                <View style={{ flex: 1, gap: 10 }}>
-                    <AppText size={16} color='black' family='InterBold' opacity={0.8}>Product Name</AppText>
+                <View style={{ flex: 1, gap: 6 }}>
+                    <AppText size={14} color='black' family='InterBold' opacity={0.8}>Product Name</AppText>
                     <Dropdown
                         style={styles.selectUser}
                         placeholderStyle={{ color: '#718096', fontSize: 14 }}
@@ -456,95 +417,73 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                         // disable={loadingProducts}
                         onChange={(item) => {
                             if(loadingProducts && productList.length == 0) return
-                            setSelectedProduct(item);
-                            if (item.subcategory_id) {
-                                setSelectedFamilyId(item.subcategory_id);
-                            }
-
-                            // ⭐ Auto set Segment
-                            if (item.category_id) {
-                                setSelectedSegmentId(item.category_id);
-                            }
-                            fetchProductDetails(item.value);
+                            selectProduct(item);
                         }}
                         renderRightIcon={() =>
                             <ArrowDownIcon />
                         }
 
                     />
-                    {selectedFamilyId && !loadingProducts && productList?.length === 0 && (
+                    {selectedSegmentId && !loadingProducts && productList?.length === 0 && (
                         <AppText
                             size={13}
                             color="#e74c3c"
                             family="InterMedium"
                             style={{ marginTop: rw(8), textAlign: 'center' }}
                         >
-                            No products found in this family
+                            No products found in this category
                         </AppText>
                     )}
                 </View>
                 {
                     productDetails && (
-                        <View style={styles.quantitySection}>
-                            <View style={styles.productContainer}>
-                                {/* tries S3 then server storage; "No Image" box when there is none */}
-                                <MediaImage
-                                    style={styles.productImage}
-                                    path={productDetails?.product_image}
-                                    resizeMode='cover'
-                                />
-                            </View>
-                            <View style={[styles.tableContainer, { alignSelf: 'center' }]}>
-                                <View style={[styles.tableRow, {
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: '#E1DEDF',
-                                    width: "100%"
-                                }]}>
-                                    <View style={{ width: '48%' }}>
-                                        <AppText size={14} color='black' family='InterSemiBold' opacity={0.8}>
-                                            Subcategory
-                                        </AppText>
-                                        <AppText size={13} color="black" family='InterRegular' opacity={0.8}>
-                                            {productDetails?.subcategory_name}
-                                        </AppText>
-                                    </View>
-                                    <View style={{ width: '48%', alignItems: 'center' }}>
-                                        <AppText size={14} color='black' family='InterSemiBold' opacity={0.8}>
-                                            Product
-                                        </AppText>
-                                        <AppText size={13} color="black" family='InterRegular' opacity={0.8} align='center'>
-                                            {productDetails?.product_name}
-                                        </AppText>
-                                    </View>
+                        <View style={detailStyles.card}>
+                            <View style={detailStyles.header}>
+                                <View style={detailStyles.imageBox}>
+                                    {/* tries S3 then server storage; "No Image" box when there is none */}
+                                    <MediaImage
+                                        style={styles.productImage}
+                                        path={productDetails?.product_image}
+                                        resizeMode='cover'
+                                    />
                                 </View>
-
-                                <View style={[styles.tableRow, {
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: '#E1DEDF',
-                                }]}>
-                                    <View style={{ width: '48%' }}>
-                                        <AppText size={14} color='black' family='InterSemiBold' opacity={0.8}>
-                                            GG No
-                                        </AppText>
-                                        <AppText size={13} color="black" family='InterRegular' opacity={0.8}>
+                                <View style={detailStyles.headerInfo}>
+                                    <AppText size={15} color='black' family='InterBold' numLines={3}>
+                                        {productDetails?.product_name}
+                                    </AppText>
+                                    <View style={detailStyles.ggChip}>
+                                        <AppText size={12} color='black' family='InterSemiBold'>
                                             {productDetails?.product_no || productDetails?.product_code || '-'}
                                         </AppText>
                                     </View>
-                                    <View style={{ width: '48%', alignItems: 'center' }}>
-                                        <AppText size={14} color='black' family='InterSemiBold' opacity={0.8}>
-                                            MRP
+                                    <AppText size={18} color='black' family='InterBold'>
+                                        ₹ {productDetails?.mrp}
+                                    </AppText>
+                                </View>
+                            </View>
+
+                            <View style={detailStyles.grid}>
+                                {[
+                                    { label: 'Subcategory', value: productDetails?.subcategory_name },
+                                    { label: 'Brand', value: productDetails?.brand_name || productDetails?.brand?.name || productDetails?.brand },
+                                    { label: 'OE Number', value: productDetails?.oe_number || productDetails?.oe_no },
+                                    { label: 'Specification', value: productDetails?.specification || productDetails?.specifications },
+                                ].map((field) => (
+                                    <View key={field.label} style={detailStyles.gridCell}>
+                                        <AppText size={12} color='#718096' family='InterMedium'>
+                                            {field.label}
                                         </AppText>
-                                        <AppText size={13} color="black" family='InterRegular' opacity={0.8} align='center'>
-                                            ₹ {productDetails?.mrp}
+                                        <AppText size={13} color='black' family='InterSemiBold' opacity={0.85}>
+                                            {field.value || '-'}
                                         </AppText>
                                     </View>
-                                </View>
+                                ))}
                             </View>
                         </View>
                     )
                 }
 
-                <View style={styles.quantityRow}>
+                <View style={[styles.quantityRow, { marginTop: 14 }]}>
                     <View style={styles.quantityControls}>
                         <TouchableOpacity onPress={() => {
                             setQuantity((q) => Math.max(1, q - 1));
@@ -604,7 +543,7 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
                         </AppText>
                     </TouchableOpacity>
                 </View>
-                <View style={[styles.row, { justifyContent: 'space-between', marginTop: 25 }]}>
+                <View style={[styles.row, { justifyContent: 'space-between', marginTop: 16 }]}>
                     <Pressable style={[styles.chatButton, { backgroundColor: colors.blue }]} onPress={resetForm}>
                         <AppText size={14} color={colors.white} family='InterBold' >Add More Product</AppText>
                     </Pressable>
@@ -619,5 +558,55 @@ const ProductCatalogue = ({ navigation, route }: ProductCatalogueProps) => {
     );
 }
 
+
+const detailStyles = StyleSheet.create({
+    card: {
+        marginTop: rw(14),
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E1DEDF',
+        padding: rw(12),
+    },
+    header: {
+        flexDirection: 'row',
+        gap: rw(12),
+    },
+    imageBox: {
+        height: 90,
+        width: 90,
+        borderRadius: 14,
+        borderWidth: 2,
+        borderColor: colors.blue,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerInfo: {
+        flex: 1,
+        justifyContent: 'space-between',
+        gap: 6,
+    },
+    ggChip: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#F1ECE0',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginTop: rw(12),
+        borderTopWidth: 1,
+        borderTopColor: '#E1DEDF',
+    },
+    gridCell: {
+        width: '50%',
+        paddingVertical: rw(8),
+        paddingRight: rw(8),
+        gap: 2,
+    },
+});
 
 export default ProductCatalogue;
