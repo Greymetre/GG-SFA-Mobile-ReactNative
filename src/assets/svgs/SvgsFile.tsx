@@ -421,8 +421,44 @@ function MicIcon(props: any) {
   )
 }
 
+function SparkleIcon(props: any) {
+  return (
+    <Svg
+      width={props?.size || 22}
+      height={props?.size || 22}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <Path
+        d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"
+        fill={props?.color || "#000"}
+      />
+    </Svg>
+  )
+}
+
+function SendIcon(props: any) {
+  return (
+    <Svg
+      width={props?.size || 22}
+      height={props?.size || 22}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <Path
+        d="M11 19V7.83l-4.88 4.88a.996.996 0 11-1.41-1.41l6.59-6.59a.996.996 0 011.41 0l6.59 6.59a.996.996 0 11-1.41 1.41L13 7.83V19c0 .55-.45 1-1 1s-1-.45-1-1z"
+        fill={props?.color || "#000"}
+      />
+    </Svg>
+  )
+}
+
 export {
   BackIcon, CalenderIcon, BuyOrderIcon, CalenderAddIcon, OrderBoxIcon, OrderHistoryIcon,
   ArrowDownIcon, CreateIcon, EyeIcon, PlusAddIcon, ThreeDotIcon, EyeballIcon, CrossIcon,
-  LOcationIcon, BlueTickIcon, OrderIcon, UserIcon, MicIcon
+  LOcationIcon, BlueTickIcon, OrderIcon, UserIcon, MicIcon, SparkleIcon, SendIcon
 }

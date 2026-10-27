@@ -42,6 +42,7 @@ import Notifications from '../screens/Notifications';
 import MyProfile from '../screens/MyProfile';
 import Documents from '../screens/Documents';
 import News from '../screens/News';
+import Assistant from '../screens/Assistant';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -212,6 +213,11 @@ const Routes = () => {
         <Stack.Screen name='Documents' component={Documents} options={{
           headerShown: true,
           title: 'Documents'
+        }} />
+        {/* draws its own header (AI avatar + online status) */}
+        <Stack.Screen name='Assistant' component={Assistant} options={{
+          headerShown: false,
+          title: 'Gajra AI Assistant'
         }} />
         <Stack.Screen name='News' component={News} options={{
           headerShown: false,

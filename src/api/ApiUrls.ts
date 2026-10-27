@@ -15,6 +15,9 @@ export const API_ENDPOINT = {
   GET_PINCODES_LIST: "api/get-location-by-pincode",
   GET_PINCODESBYCITY_LIST: "api/getPincodeList",
   GET_NOTIFICATIONS: "api/getNotification",
+  // CRM Assistant (AI chat)
+  CHATBOT_HISTORY: "api/chatbot/history",
+  CHATBOT_MESSAGE: "api/chatbot/message",
   READ_NOTIFICATION: "api/notifications/read",
   GET_PROFILE: "api/getProfile",
   UPDATE_PROFILE: "api/updateProfile",

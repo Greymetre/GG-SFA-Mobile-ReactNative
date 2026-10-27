@@ -37,6 +37,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { startLiveLocationTracking, stopLiveLocationTracking } from '../../services/liveLocationService'
 import { APP_VERSION, compareVersions } from '../../utils/appVersion'
 import NotificationBell from '../../components/NotificationBell'
+import AskAiButton from '../../components/atoms/AskAiButton'
 import PrimaryShineChip from '../../components/atoms/PrimaryShineChip'
 import { BASE_URL } from '../../api/AxiosClient'
 
@@ -1356,6 +1357,7 @@ const Home = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      <AskAiButton />
     </View>
   )
 }

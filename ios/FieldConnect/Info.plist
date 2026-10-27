@@ -57,12 +57,12 @@
 	<string>FieldKonnect uses your location for attendance, visit locations, and field activity tracking while you are punched in.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>FieldKonnect uses the microphone so you can speak your visit remarks instead of typing them.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>FieldKonnect converts your spoken visit remarks into text.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app needs to save photos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo access to take photos</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>FieldKonnect converts your spoken visit remarks into text.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

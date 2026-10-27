@@ -68,6 +68,7 @@ export type RootStackParamList = {
   DealerDistributorPerformanceViewAllScreen:undefined
   PromotionalActivitiesViewAllScreen:undefined
   RetailersPerformanceViewAllScreen:undefined
+  Assistant: undefined;
   Notifications: undefined
   MyProfile: undefined
   Documents: undefined

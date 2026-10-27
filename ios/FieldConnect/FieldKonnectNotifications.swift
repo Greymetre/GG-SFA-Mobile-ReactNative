@@ -174,7 +174,15 @@ class SpeechToText: NSObject {
       self.request = request
 
       let input = audioEngine.inputNode
-      input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { buffer, _ in
+      let format = input.outputFormat(forBus: 0)
+      // No microphone (e.g. a simulator without Mac mic access) gives a 0 Hz format; installTap would crash on it.
+      guard format.sampleRate > 0, format.channelCount > 0 else {
+        finish()
+        reject("NO_MICROPHONE", "Microphone nahi mila. Mic ki permission / device check kijiye.", nil)
+        return
+      }
+      input.removeTap(onBus: 0)
+      input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
         request.append(buffer)
       }
       audioEngine.prepare()
