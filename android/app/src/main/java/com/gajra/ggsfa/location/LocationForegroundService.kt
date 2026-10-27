@@ -379,6 +379,7 @@ class LocationForegroundService : Service() {
   }
 
   private fun showApiResultNotification(title: String, message: String, body: String) {
+    if (!SHOW_API_RESULT_NOTIFICATIONS) return
     val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val notificationId = API_RESULT_NOTIFICATION_ID_BASE + (System.currentTimeMillis() % 100000).toInt()
     manager.notify(notificationId, apiResultNotification(title, message, body))
@@ -406,6 +407,8 @@ class LocationForegroundService : Service() {
     private const val CHANNEL_ID = "fieldkonnect_live_location"
     private const val NOTIFICATION_ID = 9301
     private const val API_RESULT_NOTIFICATION_ID_BASE = 9400
+    // Debug only: posts a notification for every location API hit. Keep false in release builds.
+    private const val SHOW_API_RESULT_NOTIFICATIONS = false
     private const val LOCATION_SYNC_INTERVAL_MS = 3 * 60 * 1000L
     private const val LOG_BODY_LIMIT = 500
     private const val NOTIFICATION_BODY_LIMIT = 220

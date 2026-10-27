@@ -134,8 +134,11 @@ const requestIosNotificationPermission = async () => {
   }
 };
 
+// Debug only: posts a notification for every location API hit. Keep false in release builds.
+const SHOW_LOCATION_API_NOTIFICATIONS = false;
+
 const showIosLocationNotification = async (title: string, message: string) => {
-  if (Platform.OS !== 'ios') return;
+  if (Platform.OS !== 'ios' || !SHOW_LOCATION_API_NOTIFICATIONS) return;
 
   try {
     const notifications = FieldKonnectNotifications as IosNotificationModule | undefined;

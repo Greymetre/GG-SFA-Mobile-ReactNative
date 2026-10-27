@@ -15,9 +15,10 @@ import { rw } from '../../utils/responsive';
 import { colors } from '../../utils/Colors';
 import Toast from 'react-native-toast-message';
 import { useGetSubmitCheckout } from '../../api/query/CustomerApi'; // ← add this hook
-import { ArrowDownIcon } from '../../assets/svgs/SvgsFile';
+import { ArrowDownIcon, MicIcon } from '../../assets/svgs/SvgsFile';
 import axios from 'axios';
 import store from '../../components/redux/Store';
+import { cancelListening, listenForSpeech, stopListening } from '../../utils/speechToText';
 
 interface VisitReportProps {
   navigation: any;
@@ -53,6 +54,36 @@ const VisitReport: React.FC<VisitReportProps> = ({ navigation, route }) => {
   const [visitTypes, setVisitTypes] = useState<VisitType[]>([]);
   const [visitTypesLoading, setVisitTypesLoading] = useState(true);
   const [visitTypesError, setVisitTypesError] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  // Stop the microphone if the user leaves the screen mid-dictation.
+  useEffect(() => () => { cancelListening(); }, []);
+
+  const handleMicPress = async () => {
+    if (listening) {
+      stopListening(); // the pending listenForSpeech() resolves with what was heard
+      return;
+    }
+
+    setListening(true);
+    try {
+      const spokenText = await listenForSpeech();
+      if (spokenText) {
+        setDescription((prev) => (prev.trim() ? `${prev.trimEnd()} ${spokenText}` : spokenText));
+      } else {
+        Toast.show({ type: 'info', text1: "Didn't catch that", text2: 'Please tap the mic and speak again', position: 'top' });
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Voice typing failed',
+        text2: error?.message || 'Please try again',
+        position: 'top',
+      });
+    } finally {
+      setListening(false);
+    }
+  };
 
   const visitTypeOptions = [
     { label: 'First Time Visit (New Visit)', value: 'First Time Visit (New Visit)' },
@@ -238,15 +269,41 @@ const VisitReport: React.FC<VisitReportProps> = ({ navigation, route }) => {
           <AppText size={14} color="#000" family="InterBold">
             Description / Remarks *
           </AppText>
-          <TextInput
-            style={[styles.todayInput, { marginTop: rw(8), minHeight: 120 }]}
-            placeholder="Enter details of the visit..."
-            placeholderTextColor="#718096"
-            multiline
-            numberOfLines={6}
-            value={description}
-            onChangeText={setDescription}
-          />
+          <View>
+            <TextInput
+              style={[styles.todayInput, { marginTop: rw(8), minHeight: 120, paddingRight: rw(56) }]}
+              placeholder="Enter details of the visit or tap the mic to speak..."
+              placeholderTextColor="#718096"
+              multiline
+              numberOfLines={6}
+              value={description}
+              onChangeText={setDescription}
+            />
+            <Pressable
+              onPress={handleMicPress}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={listening ? 'Stop voice typing' : 'Start voice typing'}
+              style={{
+                position: 'absolute',
+                right: rw(10),
+                top: rw(18),
+                width: rw(40),
+                height: rw(40),
+                borderRadius: rw(20),
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: listening ? '#E53E3E' : colors.blue,
+              }}
+            >
+              <MicIcon size={rw(20)} color="#FFFFFF" />
+            </Pressable>
+          </View>
+          {listening && (
+            <AppText size={12} color="#E53E3E" style={{ marginTop: 6 }}>
+              Listening... speak now, tap the mic again when done
+            </AppText>
+          )}
         </View>
 
         {/* Submit Button */}

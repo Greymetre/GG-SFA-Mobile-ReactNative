@@ -72,6 +72,8 @@ const money = (value: unknown) => `₹${number(value).toFixed(2)}L`;
 const TargetArchieViewAllScreen = ({ navigation, route }: any) => {
   const initialZone = String(route?.params?.zone || '').replace(/\s+zone$/i, '').trim();
   const [period, setPeriod] = useState<Period>('MTD');
+  // Primary: Primary Sales uploads vs Primary target; Secondary: orders vs Secondary target
+  const [salesType, setSalesType] = useState<'primary' | 'secondary'>(route?.params?.type === 'secondary' ? 'secondary' : 'primary');
   const [sections, setSections] = useState<SalesSection[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeModal, setActiveModal] = useState<FilterKey | null>(null);
@@ -121,7 +123,7 @@ const TargetArchieViewAllScreen = ({ navigation, route }: any) => {
   useEffect(() => {
     const fetchSalesSummary = async () => {
       const token = store.getState()?.auth?.token;
-      const params = [`period=${period.toLowerCase()}`];
+      const params = [`type=${salesType}`, `period=${period.toLowerCase()}`];
       if (period === 'MTD') {
         selectedMonths.forEach(month => params.push(`months[]=${month}`));
         params.push(`year=${selectedYear}`);
@@ -179,7 +181,7 @@ const TargetArchieViewAllScreen = ({ navigation, route }: any) => {
       }
     };
     fetchSalesSummary();
-  }, [filters, period, selectedFinancialYear, selectedMonths, selectedYear]);
+  }, [filters, period, salesType, selectedFinancialYear, selectedMonths, selectedYear]);
 
   const filterLabel = (item: FilterItem | string) => {
     if (typeof item === 'string') return item;
@@ -290,6 +292,17 @@ const TargetArchieViewAllScreen = ({ navigation, route }: any) => {
       </View>
 
       <View style={styles.periodTabs}>
+        {(['primary', 'secondary'] as const).map(item => (
+          <Pressable key={item} style={[styles.periodTab, salesType === item && styles.activePeriodTab]}
+            onPress={() => setSalesType(item)}>
+            <AppText size={14} family="InterBold" color={salesType === item ? '#fff' : '#8990a5'}>
+              {item === 'primary' ? 'Primary' : 'Secondary'}
+            </AppText>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.periodTabs, { marginTop: 10 }]}>
         {(['MTD', 'YTD'] as Period[]).map(item => (
           <Pressable key={item} style={[styles.periodTab, period === item && styles.activePeriodTab]}
             onPress={() => setPeriod(item)}>

@@ -9,6 +9,7 @@ import { formatShortNumber } from '../../utils/misc';
 interface TargetAchievementCardProps {
   onViewAllPress?: () => void;
   homeData: any;
+  type?: 'primary' | 'secondary';
 }
 
 const number = (value: any) => Number(value) || 0;
@@ -43,7 +44,11 @@ const PercentageRing = ({ percentage }: { percentage: number }) => {
   );
 };
 
-const TargetAchievementCard: React.FC<TargetAchievementCardProps> = ({ homeData }) => {
+const TargetAchievementCard: React.FC<TargetAchievementCardProps> = ({ homeData: apiData, type = 'secondary' }) => {
+  // Primary tab: primary_target_achievement (same shape as target_achievement_summary); zeros until the API sends it
+  const homeData = type === 'primary'
+    ? { target_achievement_summary: apiData?.primary_target_achievement ?? {} }
+    : apiData;
   // Use a future combined API object first; aggregate current ASR + DSR fields meanwhile.
   const summary = homeData?.target_achievement_summary;
   const combinedTarget = homeData?.total_target;

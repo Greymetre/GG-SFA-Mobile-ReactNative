@@ -10,6 +10,7 @@ class LocationTrackingPackage : ReactPackage {
     listOf(
       LocationTrackingModule(reactContext),
       AppInfoModule(reactContext),
+      SpeechToTextModule(reactContext),
     )
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =

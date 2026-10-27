@@ -72,6 +72,7 @@ const Home = () => {
   const [homeData, setHomeData] = useState<any>(null);
   const [homeLoading, setHomeLoading] = useState(false);
   const [performanceTab, setPerformanceTab] = useState<'zone' | 'state'>('zone');
+  const [targetTab, setTargetTab] = useState<'primary' | 'secondary'>('primary');
 
   // Local calendar date (toISOString is UTC and shifts IST early-morning dates back a day)
   const formatLocalDate = (date: Date) =>
@@ -761,12 +762,17 @@ const Home = () => {
                             </Pressable>
                           </>
                         ) : (
-                          <Switch
-                            value={isPunchedIn}
-                            onValueChange={() => handleToggleAttendance()}
-                            trackColor={{ false: '#767577', true: colors.blue }}
-                            thumbColor={isPunchedIn ? colors.goldLight : '#f4f3f4'}
-                          />
+                          // white pill (like "Day Ended") so the switch stands out on the light yellow header
+                          <View style={{ height: 34, paddingHorizontal: 4, borderRadius: 19, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: isPunchedIn ? colors.gold : '#D6D6D6', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3 }}>
+                            <Switch
+                              value={isPunchedIn}
+                              onValueChange={() => handleToggleAttendance()}
+                              trackColor={{ false: '#8E8E93', true: colors.blue }}
+                              ios_backgroundColor="#8E8E93"
+                              thumbColor={isPunchedIn ? colors.goldLight : '#FFFFFF'}
+                              style={{ transform: [{ scale: 0.9 }] }}
+                            />
+                          </View>
                         )
                       }
 
@@ -844,14 +850,35 @@ const Home = () => {
                 <View style={[styles.row, { justifyContent: 'space-between' }]}>
                   <View style={[styles.row, { gap: 6, alignItems: 'baseline' }]}>
                     <AppText color={colors.black} size={18} family="InterSemiBold">Target VS Achievement</AppText>
-                    <PrimaryShineChip />
                   </View>
-                  <Pressable onPress={() => navigation.navigate("TargetArchieViewAllScreen")} hitSlop={10}>
+                  <Pressable onPress={() => navigation.navigate("TargetArchieViewAllScreen", { type: targetTab })} hitSlop={10}>
                     <AppText color={colors.blue} family={'InterMedium'} size={13}>View All →</AppText>
                   </Pressable>
                 </View>
+                {/* Primary: Primary Sales uploads vs Primary target; Secondary: orders vs Secondary target (own + team) */}
+                <View style={styles.performanceTabs}>
+                  {(['primary', 'secondary'] as const).map(tab => {
+                    const selected = targetTab === tab;
+                    return (
+                      <Pressable
+                        key={tab}
+                        style={[styles.performanceTab, selected && styles.performanceTabActive]}
+                        onPress={() => setTargetTab(tab)}
+                      >
+                        <AppText
+                          color={selected ? colors.white : colors.blue}
+                          family="InterSemiBold"
+                          size={13}
+                        >
+                          {tab === 'primary' ? 'Primary' : 'Secondary'}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
               <TargetAchievementCard
+                type={targetTab}
                 homeData={homeData}
                 onViewAllPress={() => console.log('View All pressed')}
               />

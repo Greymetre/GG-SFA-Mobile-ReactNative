@@ -23,6 +23,7 @@ import { ArrowDownIcon, EyeballIcon, ThreeDotIcon, PlusAddIcon } from '../../ass
 import { rw } from '../../utils/responsive';
 import { colors } from '../../utils/Colors';
 import store, { useAppSelector } from '../../components/redux/Store';
+import { setUser } from '../../components/redux/slice/AuthSlice';
 import {
   useGetTourPlanData,
   useGetUserCityListApi,
@@ -130,6 +131,8 @@ const AttendanceScreen: React.FC<{ navigation: any; route: any }> = ({ navigatio
   const [tourLoading, setTourLoading] = useState(false);
   const [tourError, setTourError] = useState<string | null>(null);
   const [tourPlans, setTourPlans] = useState<TourPlanItem[]>([]);
+  // CRM user setting "Attendance Tour Plan": off → no Today's Tour Plan, objective / cities picked directly
+  const [tourPlanEnabled, setTourPlanEnabled] = useState<boolean>(String(user?.attendance_tour_plan) === '1');
 
   const { mutateAsync: getTodayPlanData } = useGetTourPlanData();
   const { mutateAsync: getCities } = useGetUserCityListApi();
@@ -275,7 +278,30 @@ const AttendanceScreen: React.FC<{ navigation: any; route: any }> = ({ navigatio
   useFocusEffect(
     useCallback(() => {
       if (isPunchOutMode) return;
-      loadTourPlan();
+      let active = true;
+      // the setting can change in the CRM any time, so read it fresh from the profile
+      axiosClient.get(API_ENDPOINT.GET_PROFILE)
+        .then((response: any) => {
+          const info = response?.data?.userinfo;
+          if (!active || !info) return;
+          const enabled = String(info.attendance_tour_plan) === '1';
+          setTourPlanEnabled(enabled);
+          const current = store.getState().auth?.user;
+          if (current && current.attendance_tour_plan !== info.attendance_tour_plan) {
+            store.dispatch(setUser({ ...current, attendance_tour_plan: info.attendance_tour_plan }));
+          }
+          if (enabled) {
+            loadTourPlan();
+          } else {
+            setTourPlan(null);
+            setTourPlans([]);
+          }
+        })
+        .catch(() => {
+          // offline: go by the last known setting
+          if (active && String(store.getState().auth?.user?.attendance_tour_plan) === '1') loadTourPlan();
+        });
+      return () => { active = false; };
       // The loaders use the latest mutation functions when the screen regains focus.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPunchOutMode])
@@ -680,12 +706,14 @@ const AttendanceScreen: React.FC<{ navigation: any; route: any }> = ({ navigatio
           </>
         ) : (
           <>
-            <View style={{ marginTop: rw(20) }}>
-              <AppText size={14} color="#000" family="InterBold">
-                Today's Tour Plan
-              </AppText>
-              {renderTourPlanSection()}
-            </View>
+            {tourPlanEnabled && (
+              <View style={{ marginTop: rw(20) }}>
+                <AppText size={14} color="#000" family="InterBold">
+                  Today's Tour Plan
+                </AppText>
+                {renderTourPlanSection()}
+              </View>
+            )}
 
             <View style={{ marginTop: rw(24) }}>
               <AppText size={14} color="#000" family="InterBold">

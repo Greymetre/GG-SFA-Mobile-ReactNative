@@ -403,8 +403,26 @@ function UserIcon(props: any) {
   )
 }
 
+function MicIcon(props: any) {
+  return (
+    <Svg
+      width={props?.size || 22}
+      height={props?.size || 22}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <Path
+        d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z"
+        fill={props?.color || "#000"}
+      />
+    </Svg>
+  )
+}
+
 export {
   BackIcon, CalenderIcon, BuyOrderIcon, CalenderAddIcon, OrderBoxIcon, OrderHistoryIcon,
   ArrowDownIcon, CreateIcon, EyeIcon, PlusAddIcon, ThreeDotIcon, EyeballIcon, CrossIcon,
-  LOcationIcon, BlueTickIcon, OrderIcon, UserIcon
+  LOcationIcon, BlueTickIcon, OrderIcon, UserIcon, MicIcon
 }
