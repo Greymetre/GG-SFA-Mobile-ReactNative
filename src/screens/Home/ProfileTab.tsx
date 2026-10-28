@@ -27,6 +27,7 @@ const data = [
   { id: 1, name: 'My Profile', icon: 'M12 11.5a4 4 0 100-8 4 4 0 000 8zM4.5 20.5c0-3.9 3.4-6.5 7.5-6.5s7.5 2.6 7.5 6.5' },
   { id: 9, name: 'Tour Plan', icon: 'M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v11a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5zM4 10h16M8.5 3v4M15.5 3v4M12 18s-2.5-2.1-2.5-3.8a2.5 2.5 0 015 0C14.5 15.9 12 18 12 18z' },
   { id: 3, name: 'Report', icon: 'M4 20.5h16M7 16.5v-5M12 16.5v-10M17 16.5v-7' },
+  { id: 10, name: 'E-Catalogue/Locator', icon: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0113 0c0 5.4-6.5 11-6.5 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z' },
   { id: 4, name: 'Documents', icon: 'M14 3H7.5A2.5 2.5 0 005 5.5v13A2.5 2.5 0 007.5 21h9a2.5 2.5 0 002.5-2.5V8zM14 3v5h5M9 13h6M9 16.5h4' },
   { id: 6, name: 'Logout', icon: 'M14 4h3.5A2.5 2.5 0 0120 6.5v11a2.5 2.5 0 01-2.5 2.5H14M10 16.5L5.5 12 10 7.5M5.5 12H15' },
   { id: 7, name: 'Delete Account', icon: 'M4 7h16M9 7V4.5h6V7m3 0l-1 13.5H7L6 7m4 4v6m4-6v6', danger: true },
@@ -234,6 +235,10 @@ const ProfileTab = ({ handleDrawerClose }: any) => {
                       handleDrawerClose()
                       // navigation.navigate('UserActivityPage')
                       // navigation.navigate('AttendanceReport')
+                    }
+                    else if (item?.name == "E-Catalogue/Locator") {
+                      navigation.navigate('Locator')
+                      handleDrawerClose()
                     }
                     else if (item?.name == "Documents") {
                       navigation.navigate('Documents')

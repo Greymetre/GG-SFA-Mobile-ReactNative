@@ -58,6 +58,8 @@ export type RootStackParamList = {
   BeatCustomerList:undefined;
   OrderHistoryDetailsScreen:undefined
   Reports:undefined
+  Locator: undefined
+  LocatorWebView: { url: string; title?: string }
   OrderListDetails:undefined
   IndividualPage:undefined
   AttendanceViewAllScreen:{

@@ -43,6 +43,8 @@ import MyProfile from '../screens/MyProfile';
 import Documents from '../screens/Documents';
 import News from '../screens/News';
 import Assistant from '../screens/Assistant';
+import Locator from '../screens/Locator';
+import LocatorWebView from '../screens/Locator/LocatorWebView';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -104,6 +106,14 @@ const Routes = () => {
         <Stack.Screen name='Reports' component={Reports} options={{
           headerShown: true,
           title: 'Reports'
+        }} />
+        <Stack.Screen name='Locator' component={Locator} options={{
+          headerShown: true,
+          title: 'E-Catalogue/Locator'
+        }} />
+        <Stack.Screen name='LocatorWebView' component={LocatorWebView} options={{
+          headerShown: true,
+          title: 'Locator'
         }} />
 
         <Stack.Screen name='TourPlanPage' component={TourPlanPage} options={{
