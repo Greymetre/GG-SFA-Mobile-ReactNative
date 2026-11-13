@@ -352,6 +352,17 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
   ]
 
   const isMechanic = isMechanicCustomer(customerData) || isMechanicCustomer(data) || isMechanicCustomer(routeItem)
+  const customerTypeName = String(
+    customerData?.registration_type ||
+    data?.customer_type ||
+    data?.type ||
+    data?.customertypes?.customertype_name ||
+    routeItem?.customer_type ||
+    routeItem?.type ||
+    routeItem?.customertypes?.customertype_name ||
+    '',
+  ).trim()
+  const canViewLoyalty = isMechanic || /^retailer$/i.test(customerTypeName)
   const mechanicCategory = customerData?.mechanic_category || data?.mechanic_category || routeItem?.mechanic_category || null
   const formatNumber = (value: any) => Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })
   const formatDate = (value: any) => {
@@ -570,11 +581,11 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
               </View>
             </View>
 
-            {
-              customerData && (
+            <View style={[styles.row, styles.customerActionRow]}>
+              {customerData && (
                 <Pressable
                   style={[
-                    styles.checkInButton,
+                    styles.customerActionButton,
                     styles.row,
                     { backgroundColor: checkInHanlde ? '#D64545' : colors.blue },
                     (checkInLoading) ? { opacity: 0.7 } : null,
@@ -600,29 +611,50 @@ const CustomerDetails = ({ navigation, route }: CustomerDetailsProps) => {
                   disabled={checkInLoading || loader}
                 >
                   <CheckIcon color="white" />
-                  <AppText size={15} color="#FDFDFD" family="InterSemiBold">
+                  <AppText size={12} color="#FDFDFD" family="InterSemiBold">
                     {checkInLoading
-                      ? 'Processing...'
+                      ? 'Wait...'
                       : checkInHanlde
                         ? 'Check Out'
                         : 'Check In'}
                   </AppText>
                 </Pressable>
-              )
-            }
+              )}
+
+              {/* Who checked in / out at this customer and when */}
+              <Pressable
+                style={[styles.customerActionButton, styles.customerActionOutline, styles.row]}
+                onPress={() => setVisitHistoryVisible(true)}
+              >
+                <View style={styles.customerActionIconBadge}>
+                  <CalenderIcon size={16} color={colors.blue} />
+                </View>
+                <AppText size={11} color={colors.blue} family="InterSemiBold">
+                  Visit History
+                </AppText>
+              </Pressable>
+              {canViewLoyalty && (
+                <Pressable
+                  style={[styles.customerActionButton, styles.customerActionOutline, styles.row]}
+                  onPress={() => navigation.navigate('CustomerLoyalty', {
+                    customerId: routeItem?.customer_id || routeItem?.id,
+                    customerName: customerData?.legal_name,
+                  })}
+                >
+                  <View style={styles.customerActionIconBadge}>
+                    <AppText size={14} color={colors.blue} family="InterBold">★</AppText>
+                  </View>
+                  <AppText size={12} color={colors.blue} family="InterSemiBold">
+                    Loyalty
+                  </AppText>
+                </Pressable>
+              )}
+            </View>
             {checkInHanlde && !!lastCheckinText && (
               <AppText size={12} color="black" family="InterRegular" opacity={0.6} align="center" style={{ marginTop: 8 }}>
                 Checked in since {lastCheckinText}
               </AppText>
             )}
-
-            {/* Who checked in / out at this customer and when */}
-            <Pressable style={[styles.visitHistoryButton, styles.row]} onPress={() => setVisitHistoryVisible(true)}>
-              <CalenderIcon />
-              <AppText size={15} color={colors.blue} family="InterSemiBold">
-                Visit History
-              </AppText>
-            </Pressable>
             <CustomerVisitHistory
               visible={visitHistoryVisible}
               customerId={routeItem?.customer_id || routeItem?.id}

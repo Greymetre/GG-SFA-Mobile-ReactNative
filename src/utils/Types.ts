@@ -16,6 +16,10 @@ export type RootStackParamList = {
   SignUpScreen: undefined;
   AccountPendingScreen: undefined;
   CustomerDetails: undefined;
+  CustomerLoyalty: {
+    customerId: string | number;
+    customerName?: string;
+  };
   TourPlanPage: undefined;
   ForceUpdateScreen: undefined;
   CreatePlan: undefined | { item: number | string };

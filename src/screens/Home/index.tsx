@@ -38,6 +38,7 @@ import { startLiveLocationTracking, stopLiveLocationTracking } from '../../servi
 import { APP_VERSION, compareVersions } from '../../utils/appVersion'
 import NotificationBell from '../../components/NotificationBell'
 import AskAiButton from '../../components/atoms/AskAiButton'
+import { isSuperadminUser } from '../../utils/roles'
 import PrimaryShineChip from '../../components/atoms/PrimaryShineChip'
 import { BASE_URL } from '../../api/AxiosClient'
 
@@ -1357,7 +1358,7 @@ const Home = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      <AskAiButton />
+      {isSuperadminUser(user) && <AskAiButton />}
     </View>
   )
 }

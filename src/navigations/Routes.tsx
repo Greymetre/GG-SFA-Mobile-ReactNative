@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../utils/Types';
 import LoginScreen from '../screens/Login';
 import CustomerDetails from '../screens/Customer/CustomerDetails';
+import CustomerLoyalty from '../screens/CustomerLoyalty';
 import CustomHeader from '../components/Header';
 import TourPlanPage from '../screens/TourPlan';
 import CreatePlan from '../screens/TourPlan/CreatePlan';
@@ -45,6 +46,7 @@ import News from '../screens/News';
 import Assistant from '../screens/Assistant';
 import Locator from '../screens/Locator';
 import LocatorWebView from '../screens/Locator/LocatorWebView';
+import { isSuperadminUser } from '../utils/roles';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -82,6 +84,10 @@ const Routes = () => {
         <Stack.Screen name='CustomerDetails' component={CustomerDetails} options={{
           headerShown: true,
           title: 'Customer Details'
+        }} />
+        <Stack.Screen name='CustomerLoyalty' component={CustomerLoyalty} options={{
+          headerShown: true,
+          title: 'Customer Loyalty'
         }} />
         <Stack.Screen name='AttendanceReport' component={AttendanceReport} options={{
           headerShown: true,
@@ -224,11 +230,13 @@ const Routes = () => {
           headerShown: true,
           title: 'Documents'
         }} />
-        {/* draws its own header (AI avatar + online status) */}
-        <Stack.Screen name='Assistant' component={Assistant} options={{
-          headerShown: false,
-          title: 'Gajra AI Assistant'
-        }} />
+        {/* draws its own header (AI avatar + online status); superadmin only */}
+        {isSuperadminUser(user) && (
+          <Stack.Screen name='Assistant' component={Assistant} options={{
+            headerShown: false,
+            title: 'Gajra AI Assistant'
+          }} />
+        )}
         <Stack.Screen name='News' component={News} options={{
           headerShown: false,
           title: 'News'

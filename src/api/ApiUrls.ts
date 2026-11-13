@@ -40,6 +40,7 @@ export const API_ENDPOINT = {
   CUSTOMERS_BY_TYPE_FILTERS: "api/customersByType/filters",
   GET_CUSTOMER_INFO: "api/getCustomerInfo",
   CUSTOMER_VISITS: "api/customer-visits",
+  CUSTOMER_LOYALTY: "api/customer-loyalty",
   STORE_CUSTOMER: "api/storeCustomer",
   UPDATE_CUSTOMER_PROFILE: "api/updateCustomerProfile",
   SECONDARY_CUSTOMER: "api/secondary-customers",

@@ -453,3 +453,28 @@ export type CustomerVisit = {
 
 export const getCustomerVisitsApi = (customer_id: number | string, page = 1) =>
     axiosClient.get(API_ENDPOINT.CUSTOMER_VISITS, { params: { customer_id, page } });
+
+export type CustomerLoyaltyScan = {
+    id: number;
+    coupon_code: string;
+    points: number;
+    quantity: number;
+    point_type: string;
+    transaction_at: string | null;
+};
+
+export type CustomerLoyalty = {
+    total_points: number;
+    redeemed_points: number;
+    remaining_balance: number;
+    total_scans: number;
+    recent_scans: CustomerLoyaltyScan[];
+    recent_redemptions: {
+        id: string;
+        points: number;
+        transaction_at: string | null;
+    }[];
+};
+
+export const getCustomerLoyaltyApi = (customer_id: number | string) =>
+    axiosClient.get(API_ENDPOINT.CUSTOMER_LOYALTY, { params: { customer_id } });

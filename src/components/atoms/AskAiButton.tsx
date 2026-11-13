@@ -6,6 +6,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import AppText from '../AppText/AppText';
 import AiIcon from '../../assets/svgs/AiIcons';
 import { colors } from '../../utils/Colors';
+import { useAppSelector } from '../redux/Store';
+import { isSuperadminUser } from '../../utils/roles';
 
 // Height of the floating GearTabBar (bar + half the lifted bubble), which this button sits above
 const TAB_BAR_HEIGHT = 68 + 56 / 2;
@@ -13,6 +15,8 @@ const GOLD = ['#FFE27A', '#F2B705', '#D99A00'];
 
 /** Floating "Ask AI" button that opens the CRM Assistant chat: a glowing pulse and a shine sweep draw the eye */
 const AskAiButton = () => {
+  const user = useAppSelector(state => state.auth.user);
+  const canUseAssistant = isSuperadminUser(user);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const insets = useSafeAreaInsets();
   const tabBarBottom = Platform.OS === 'ios' ? 14 : insets.bottom + 10;
@@ -21,6 +25,7 @@ const AskAiButton = () => {
   const press = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (!canUseAssistant) return;
     const pulseLoop = Animated.loop(
       Animated.timing(pulse, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
     );
@@ -37,9 +42,11 @@ const AskAiButton = () => {
       pulseLoop.stop();
       shineLoop.stop();
     };
-  }, [pulse, shine]);
+  }, [canUseAssistant, pulse, shine]);
 
   const springTo = (toValue: number) => Animated.spring(press, { toValue, friction: 5, useNativeDriver: true }).start();
+
+  if (!canUseAssistant) return null;
 
   return (
     <Animated.View style={[styles.wrap, { bottom: tabBarBottom + TAB_BAR_HEIGHT + 12, transform: [{ scale: press }] }]}>

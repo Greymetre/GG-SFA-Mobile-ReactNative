@@ -110,6 +110,32 @@ export const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
     },
+    customerActionRow: {
+        marginTop: 16,
+        gap: 8,
+    },
+    customerActionButton: {
+        flex: 1,
+        height: 46,
+        minWidth: 0,
+        borderRadius: 23,
+        justifyContent: 'center',
+        gap: 5,
+        paddingHorizontal: 6,
+    },
+    customerActionOutline: {
+        borderWidth: 1.5,
+        borderColor: colors.blue,
+        backgroundColor: colors.white,
+    },
+    customerActionIconBadge: {
+        height: 27,
+        width: 27,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFF3C4',
+    },
     infoGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
