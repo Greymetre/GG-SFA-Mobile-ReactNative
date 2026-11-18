@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "165304161186",
-    "project_id": "fieldkonnect-sfa",
-    "storage_bucket": "fieldkonnect-sfa.firebasestorage.app"
+    "project_number": "1075380877952",
+    "project_id": "gajra-gear",
+    "storage_bucket": "gajra-gear.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:165304161186:android:49bed0b2cda58cbd19d8fb",
+        "mobilesdk_app_id": "1:1075380877952:android:814baf7f8a737433524465",
         "android_client_info": {
           "package_name": "com.gajra.ggsfa"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB_MzhsIeGseU9Os1qdWi4WBrU3H43o0B0"
+          "current_key": "AIzaSyA_m4K-VuZTTAyWlCQ_ceDgVVdjhcOiqUY"
         }
       ],
       "services": {
