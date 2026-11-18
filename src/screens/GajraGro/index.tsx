@@ -7,8 +7,10 @@ import SchemeTab from './SchemeTab';
 import RedemptionTab from './RedemptionTab';
 import ScanningTab from './ScanningTab';
 import TrendsTab from './TrendsTab';
+import KycTab from './KycTab';
 
 const TABS = [
+  { key: 'kyc', label: 'KYC' },
   { key: 'scheme', label: 'Scheme' },
   { key: 'scanning', label: 'Scanning' },
   { key: 'redemption', label: 'Redemption' },
@@ -18,11 +20,11 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key'];
 
-// Gajra Gro+ screen: Scheme / Scanning / Redemption / Milestone / Trends (the team's Gro mechanics, report tab)
+// Gajra Gro+ screen: KYC / Scheme / Scanning / Redemption / Milestone / Trends (the team's Gro mechanics, report tab)
 const GajraGro = () => {
-  const [activeTab, setActiveTab] = useState<TabKey>('scheme');
+  const [activeTab, setActiveTab] = useState<TabKey>('kyc');
   // A tab is mounted on first open and kept, so switching back does not reload it
-  const [opened, setOpened] = useState<TabKey[]>(['scheme']);
+  const [opened, setOpened] = useState<TabKey[]>(['kyc']);
 
   const openTab = (key: TabKey) => {
     setActiveTab(key);
@@ -51,6 +53,9 @@ const GajraGro = () => {
         </ScrollView>
       </View>
 
+      {opened.includes('kyc') && (
+        <View style={[styles.page, activeTab !== 'kyc' && styles.hidden]}><KycTab /></View>
+      )}
       {opened.includes('scheme') && (
         <View style={[styles.page, activeTab !== 'scheme' && styles.hidden]}><SchemeTab /></View>
       )}

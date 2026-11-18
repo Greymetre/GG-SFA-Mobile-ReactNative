@@ -82,6 +82,8 @@ export const API_ENDPOINT = {
   ASM_RATING_DETAIL: "api/asm-rating/",
   GAJRA_GRO: "api/gajra-gro",
   GAJRA_GRO_SCHEMES: "api/gajra-gro/schemes",
+  GAJRA_GRO_KYC: "api/gajra-gro/kyc",
+  GAJRA_GRO_KYC_ACTION: "api/gajra-gro/kyc/action",
   GAJRA_GRO_REDEMPTIONS: "api/gajra-gro/redemptions",
   GAJRA_GRO_SCANS: "api/gajra-gro/scans",
   GAJRA_GRO_TRENDS: "api/gajra-gro/trends",

@@ -55,6 +55,45 @@ export type GroTarget = {
 // Gajra Gro mechanics among the logged-in user's team's customers
 export const getGajraGroApi = () => axiosClient.get(API_ENDPOINT.GAJRA_GRO);
 
+export type GroKycDocKey = 'gstin' | 'pan' | 'aadhar' | 'other' | 'bank' | 'upi';
+
+// One KYC document of a customer (live from Gajra Gro)
+export type GroKycDocument = {
+  key: GroKycDocKey;
+  label: string; // 'PAN', 'Bank / Passbook' ...
+  pending: boolean; // checked by the sales team, waiting for this user's approval
+  verified: boolean;
+  checked: boolean;
+  checked_by: string;
+  checked_at: string; // ISO date, '' when not checked
+  approved: boolean; // approved by the sales person in the app; the sales team then verifies it on Gajra Gro
+  approved_by: string;
+  approved_at: string;
+  images: { label: string; url: string }[]; // full URLs
+  fields: { label: string; value: string }[];
+};
+
+// A customer assigned to the logged-in user whose KYC documents wait for approval
+export type GroKycCustomer = {
+  gro_customer_id: string;
+  customer_id: number | null; // SFA customer id
+  name: string;
+  customer_type: string;
+  mobile: string;
+  pending_count: number;
+  personal: { full_name: string; mobile: string; email: string };
+  address: { address: string; city: string; district: string; state: string; pincode: string };
+  customer: { executive: string; parent: string; customer_code: string; manager_name: string; manager_phone: string };
+  documents: GroKycDocument[];
+};
+
+// KYC tab: customers assigned to me with documents checked by the sales team, waiting for my approval
+export const getGajraGroKycApi = () => axiosClient.get(API_ENDPOINT.GAJRA_GRO_KYC);
+
+// Approve (marks it approved for the sales team to verify) / reject (clears it on Gajra Gro) one checked KYC document
+export const gajraGroKycActionApi = (data: { gro_customer_id: string; document: GroKycDocKey; action: 'approve' | 'reject' }) =>
+  axiosClient.post(API_ENDPOINT.GAJRA_GRO_KYC_ACTION, data);
+
 export type GroSchemeStatus = 'Running' | 'Upcoming' | 'Expired';
 
 // A Gajra Gro loyalty scheme (live from Gajra Gro)
