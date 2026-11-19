@@ -81,6 +81,8 @@ export type GroKycCustomer = {
   customer_type: string;
   mobile: string;
   pending_count: number;
+  assigned_user?: string; // the team member the customer is assigned to (managers see their team's KYC)
+  assigned_to_me?: boolean;
   personal: { full_name: string; mobile: string; email: string };
   address: { address: string; city: string; district: string; state: string; pincode: string };
   customer: { executive: string; parent: string; customer_code: string; manager_name: string; manager_phone: string };

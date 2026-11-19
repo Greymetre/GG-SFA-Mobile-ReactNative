@@ -57,6 +57,9 @@ const CustomerCard = ({ row, onPress }: { row: GroKycCustomer; onPress: () => vo
         <View style={styles.tags}>
           {!!row.customer_type && <Tag text={row.customer_type} bg="#F6F2E7" fg="#2B2B2B" />}
           <Tag text={`${row.pending_count} pending`} bg="#DBEAFE" fg="#1E40AF" />
+          {row.assigned_to_me === false && !!row.assigned_user && (
+            <Tag text={`Assigned: ${row.assigned_user}`} bg="#EDE9FE" fg="#5B21B6" />
+          )}
         </View>
       </View>
       <AppText size={22} family="InterMedium" color="#C9CCD2">›</AppText>

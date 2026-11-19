@@ -41,8 +41,16 @@ const Notifications = () => {
       navigation.navigate('News', {selectedNotification: notification});
       return;
     }
+    // KYC waiting for approval: the Gajra Gro screen opens on its KYC tab
+    if (model === 'kyc') {
+      navigation.navigate('GajraGro');
+      return;
+    }
     if (!model || notification.model_id === null || notification.model_id === undefined) {
-      navigation.navigate('BottomTab');
+      // Older notifications carry no record id: open the matching list instead of Home
+      if (model === 'order' || model === 'order_history') navigation.navigate('OrderListDetails');
+      else if (model === 'expense' || model === 'expense_management') navigation.navigate('ExpenseReport');
+      else navigation.navigate('BottomTab');
       return;
     }
     const id = notification.model_id;
